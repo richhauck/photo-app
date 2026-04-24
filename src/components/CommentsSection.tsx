@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -88,8 +89,14 @@ export default function CommentsSection({
         {comments.map((c) => (
           <li key={c.id} className="border-b pb-3">
             <p className="text-sm text-gray-600">
-              @{c.author?.username ?? "unknown"} ·{" "}
-              {new Date(c.created_at).toLocaleString()}
+              {c.author?.username ? (
+                <Link href={`/profile/${c.author.username}`} className="hover:underline">
+                  @{c.author.username}
+                </Link>
+              ) : (
+                "@unknown"
+              )}{" "}
+              · {new Date(c.created_at).toLocaleString()}
             </p>
             <p className="mt-1 whitespace-pre-wrap">{c.body}</p>
           </li>

@@ -41,6 +41,13 @@ export default async function PhotoPage({
         .maybeSingle()
     : { data: null };
 
+  const owner = photo.owner as unknown as {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+
   return (
     <div className="mx-auto max-w-3xl py-8">
       <div className="relative mb-4 aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
@@ -58,9 +65,10 @@ export default async function PhotoPage({
         <div>
           <h1 className="text-2xl font-semibold">{photo.title}</h1>
           <p className="text-sm text-gray-600">
-            by @
-            {/* @ts-expect-error — Supabase typed joins need generated types */}
-            {photo.owner?.username}{" "}
+            by{" "}
+            <Link href={`/profile/${owner?.username}`} className="hover:underline">
+              @{owner?.username}
+            </Link>{" "}
             · {new Date(photo.created_at).toLocaleDateString()}
             {photo.location_name ? ` · ${photo.location_name}` : ""}
           </p>

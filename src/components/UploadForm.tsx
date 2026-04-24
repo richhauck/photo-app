@@ -23,7 +23,7 @@ export default function UploadForm({
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [licenseCode, setLicenseCode] = useState("ARR");
+  const [licenseCode, setLicenseCode] = useState(licenses[0]?.code ?? "");
   const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lat, setLat] = useState<string>("");

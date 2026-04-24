@@ -55,3 +55,18 @@ export const createCommentSchema = z.object({
   body: z.string().min(1).max(4000),
   parentId: z.string().uuid().optional(),
 });
+
+export const MAX_AVATAR_BYTES = 5 * 1024 * 1024; // 5 MB
+
+/** Request body for POST /api/avatar-url */
+export const avatarUrlSchema = z.object({
+  filename: z.string().min(1).max(256),
+  contentType: z.enum(ALLOWED_MIME),
+  sizeBytes: z.number().int().positive().max(MAX_AVATAR_BYTES),
+});
+
+/** Request body for PATCH /api/profile */
+export const updateProfileSchema = z.object({
+  bio: z.string().max(1000).optional(),
+  avatarUrl: z.string().url().max(500).optional(),
+});

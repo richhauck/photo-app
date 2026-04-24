@@ -29,6 +29,9 @@ export default async function RootLayout({
             <div className="flex items-center gap-4 text-sm">
               {user ? (
                 <>
+                  <Link href="/profile" className="underline">
+                    Profile
+                  </Link>
                   <Link href="/upload" className="underline">
                     Upload
                   </Link>
