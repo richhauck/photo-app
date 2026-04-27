@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { publicUrl } from "@/lib/r2";
 import LikeButton from "@/components/LikeButton";
 import CommentsSection from "@/components/CommentsSection";
+import PhotoMap from "@/components/PhotoMap";
+import DeletePhotoButton from "@/components/DeletePhotoButton";
 
 export default async function PhotoPage({
   params,
@@ -27,6 +29,23 @@ export default async function PhotoPage({
     .maybeSingle();
 
   if (!photo) notFound();
+
+  // Fetched separately: requires migration 0003_photo_coords.sql to be applied.
+  // Silently skips the map if the computed columns don't exist yet.
+  let coords: { lat: number; lng: number } | null = null;
+  try {
+    const { data: loc } = await supabase
+      .from("photos")
+      .select("lat, lng")
+      .eq("id", id)
+      .maybeSingle();
+    if (loc != null && (loc as { lat?: unknown }).lat != null) {
+      const l = loc as { lat: number; lng: number };
+      coords = { lat: l.lat, lng: l.lng };
+    }
+  } catch {
+    // migration not yet applied — map will be hidden
+  }
 
   const {
     data: { user },
@@ -88,6 +107,18 @@ export default async function PhotoPage({
       <p className="mt-4 text-xs text-gray-500">
         License: {photo.license_code ?? "—"} · Visibility: {photo.visibility}
       </p>
+
+      {user?.id === owner?.id && (
+        <div className="mt-4 flex justify-end">
+          <DeletePhotoButton photoId={photo.id} />
+        </div>
+      )}
+
+      {coords && (
+        <div className="mt-6">
+          <PhotoMap lat={coords.lat} lng={coords.lng} label={photo.location_name} />
+        </div>
+      )}
 
       <hr className="my-8" />
 

@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       owner_id: user.id,
       title: input.title,
       description: input.description ?? null,
-      license_code: input.licenseCode ?? null,
+      license_code: input.licenseCode || null,
       visibility: input.visibility,
       storage_key: input.storageKey,
       mime_type: input.mimeType,

@@ -19,12 +19,15 @@ export default function UploadForm({
   categories: Category[];
   licenses: License[];
 }) {
+  console.log(licenses);
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [licenseCode, setLicenseCode] = useState(licenses[0]?.code ?? "");
-  const [visibility, setVisibility] = useState<"public" | "unlisted" | "private">("public");
+  const [visibility, setVisibility] = useState<
+    "public" | "unlisted" | "private"
+  >("public");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lat, setLat] = useState<string>("");
   const [lng, setLng] = useState<string>("");
@@ -50,7 +53,10 @@ export default function UploadForm({
         }),
       });
       if (!urlRes.ok) throw new Error("Could not get upload URL");
-      const { url, key } = (await urlRes.json()) as { url: string; key: string };
+      const { url, key } = (await urlRes.json()) as {
+        url: string;
+        key: string;
+      };
 
       // 2. Upload directly to R2.
       const putRes = await fetch(url, {
@@ -63,7 +69,11 @@ export default function UploadForm({
       // 3. Create the DB row.
       const location =
         lat && lng
-          ? { lat: Number(lat), lng: Number(lng), name: locationName || undefined }
+          ? {
+              lat: Number(lat),
+              lng: Number(lng),
+              name: locationName || undefined,
+            }
           : undefined;
 
       const photoRes = await fetch("/api/photos", {
@@ -188,7 +198,9 @@ export default function UploadForm({
       </div>
 
       <fieldset className="rounded border p-3">
-        <legend className="px-1 text-sm font-medium">OpenStreetMap pin (optional)</legend>
+        <legend className="px-1 text-sm font-medium">
+          OpenStreetMap pin (optional)
+        </legend>
         <p className="mb-2 text-xs text-gray-600">
           Paste lat/lng or drop a pin on{" "}
           <a
