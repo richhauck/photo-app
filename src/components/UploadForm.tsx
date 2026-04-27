@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import LocationPicker from "@/components/LocationPicker";
 
 type Category = { id: string; name: string; slug: string };
 type License = { code: string; name: string };
@@ -19,7 +20,6 @@ export default function UploadForm({
   categories: Category[];
   licenses: License[];
 }) {
-  console.log(licenses);
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -198,35 +198,33 @@ export default function UploadForm({
       </div>
 
       <fieldset className="rounded border p-3">
-        <legend className="px-1 text-sm font-medium">
-          OpenStreetMap pin (optional)
-        </legend>
-        <p className="mb-2 text-xs text-gray-600">
-          Paste lat/lng or drop a pin on{" "}
-          <a
-            className="underline"
-            href="https://www.openstreetmap.org/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            openstreetmap.org
-          </a>{" "}
-          and copy the coordinates. A MapLibre picker is a good next step here.
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            className="rounded border px-3 py-2"
-            placeholder="Latitude"
-            value={lat}
-            onChange={(e) => setLat(e.target.value)}
-          />
-          <input
-            className="rounded border px-3 py-2"
-            placeholder="Longitude"
-            value={lng}
-            onChange={(e) => setLng(e.target.value)}
-          />
-        </div>
+        <legend className="px-1 text-sm font-medium">Location (optional)</legend>
+        <p className="mb-2 text-xs text-gray-600">Click the map to drop a pin.</p>
+        <LocationPicker
+          lat={lat}
+          lng={lng}
+          onChange={(newLat, newLng) => {
+            setLat(newLat);
+            setLng(newLng);
+          }}
+        />
+        {lat && lng && (
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-gray-500">
+              {lat}, {lng}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setLat("");
+                setLng("");
+              }}
+              className="text-xs text-red-600 underline"
+            >
+              Clear pin
+            </button>
+          </div>
+        )}
         <input
           className="mt-2 w-full rounded border px-3 py-2"
           placeholder="Location name (e.g. Central Park, NY)"

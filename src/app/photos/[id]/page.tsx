@@ -8,6 +8,26 @@ import CommentsSection from "@/components/CommentsSection";
 import PhotoMap from "@/components/PhotoMap";
 import DeletePhotoButton from "@/components/DeletePhotoButton";
 
+// PostgREST returns geography columns as hex-encoded EWKB.
+// Parse a Point to get lat/lng without an extra round-trip.
+function parseWkbPoint(hex: string | null | undefined): { lat: number; lng: number } | null {
+  if (!hex) return null;
+  try {
+    const buf = Buffer.from(hex, "hex");
+    const view = new DataView(buf.buffer, buf.byteOffset);
+    const le = view.getUint8(0) === 1;
+    const type = view.getUint32(1, le);
+    const hasSrid = !!(type & 0x20000000);
+    const offset = 5 + (hasSrid ? 4 : 0);
+    const lng = view.getFloat64(offset, le);
+    const lat = view.getFloat64(offset + 8, le);
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    return { lat, lng };
+  } catch {
+    return null;
+  }
+}
+
 export default async function PhotoPage({
   params,
 }: {
@@ -21,7 +41,7 @@ export default async function PhotoPage({
     .select(
       `id, title, description, storage_key, width, height,
        license_code, visibility, location_name, like_count, comment_count,
-       created_at,
+       created_at, location,
        owner:profiles!photos_owner_id_fkey(id, username, display_name, avatar_url)`,
     )
     .eq("id", id)
@@ -30,22 +50,7 @@ export default async function PhotoPage({
 
   if (!photo) notFound();
 
-  // Fetched separately: requires migration 0003_photo_coords.sql to be applied.
-  // Silently skips the map if the computed columns don't exist yet.
-  let coords: { lat: number; lng: number } | null = null;
-  try {
-    const { data: loc } = await supabase
-      .from("photos")
-      .select("lat, lng")
-      .eq("id", id)
-      .maybeSingle();
-    if (loc != null && (loc as { lat?: unknown }).lat != null) {
-      const l = loc as { lat: number; lng: number };
-      coords = { lat: l.lat, lng: l.lng };
-    }
-  } catch {
-    // migration not yet applied — map will be hidden
-  }
+  const coords = parseWkbPoint(photo.location as string | null);
 
   const {
     data: { user },
@@ -85,7 +90,10 @@ export default async function PhotoPage({
           <h1 className="text-2xl font-semibold">{photo.title}</h1>
           <p className="text-sm text-gray-600">
             by{" "}
-            <Link href={`/profile/${owner?.username}`} className="hover:underline">
+            <Link
+              href={`/profile/${owner?.username}`}
+              className="hover:underline"
+            >
               @{owner?.username}
             </Link>{" "}
             · {new Date(photo.created_at).toLocaleDateString()}
@@ -101,7 +109,9 @@ export default async function PhotoPage({
       </div>
 
       {photo.description && (
-        <p className="mt-4 whitespace-pre-wrap text-gray-800">{photo.description}</p>
+        <p className="mt-4 whitespace-pre-wrap text-gray-800">
+          {photo.description}
+        </p>
       )}
 
       <p className="mt-4 text-xs text-gray-500">
@@ -113,10 +123,13 @@ export default async function PhotoPage({
           <DeletePhotoButton photoId={photo.id} />
         </div>
       )}
-
       {coords && (
         <div className="mt-6">
-          <PhotoMap lat={coords.lat} lng={coords.lng} label={photo.location_name} />
+          <PhotoMap
+            lat={coords.lat}
+            lng={coords.lng}
+            label={photo.location_name}
+          />
         </div>
       )}
 
