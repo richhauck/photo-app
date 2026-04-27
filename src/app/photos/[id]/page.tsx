@@ -88,17 +88,30 @@ export default async function PhotoPage({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{photo.title}</h1>
-          <p className="text-sm text-gray-600">
-            by{" "}
-            <Link
-              href={`/profile/${owner?.username}`}
-              className="hover:underline"
-            >
-              @{owner?.username}
-            </Link>{" "}
-            · {new Date(photo.created_at).toLocaleDateString()}
-            {photo.location_name ? ` · ${photo.location_name}` : ""}
-          </p>
+          <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+            {owner?.avatar_url ? (
+              <img
+                src={owner.avatar_url}
+                alt={owner.username ?? ""}
+                className="h-7 w-7 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
+                {(owner?.username ?? "?")[0].toUpperCase()}
+              </span>
+            )}
+            <span>
+              by{" "}
+              <Link
+                href={`/profile/${owner?.username}`}
+                className="hover:underline"
+              >
+                @{owner?.username}
+              </Link>{" "}
+              · {new Date(photo.created_at).toLocaleDateString()}
+              {photo.location_name ? ` · ${photo.location_name}` : ""}
+            </span>
+          </div>
         </div>
         <LikeButton
           photoId={photo.id}

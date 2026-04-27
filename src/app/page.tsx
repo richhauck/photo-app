@@ -11,7 +11,7 @@ export default async function HomeFeed() {
   const { data: photos, error } = await supabase
     .from("photos")
     .select(
-      "id, title, storage_key, like_count, comment_count, created_at, owner:profiles!photos_owner_id_fkey(username, display_name)",
+      "id, title, storage_key, like_count, comment_count, created_at, owner:profiles!photos_owner_id_fkey(username, display_name, avatar_url)",
     )
     .eq("visibility", "public")
     .is("deleted_at", null)
@@ -53,12 +53,26 @@ export default async function HomeFeed() {
             </div>
             <div className="p-3">
               <p className="truncate font-medium">{p.title}</p>
-              <p className="text-xs text-gray-500">
-                by @
+              {/* @ts-expect-error — Supabase typed joins need generated types */}
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
                 {/* @ts-expect-error — Supabase typed joins need generated types */}
-                {p.owner?.username ?? "unknown"} · {p.like_count} ♥ ·{" "}
-                {p.comment_count} 💬
-              </p>
+                {p.owner?.avatar_url ? (
+                  <img
+                    // @ts-expect-error — Supabase typed joins need generated types
+                    src={p.owner.avatar_url}
+                    // @ts-expect-error — Supabase typed joins need generated types
+                    alt={p.owner.username ?? ""}
+                    className="h-5 w-5 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-medium text-gray-600">
+                    {/* @ts-expect-error — Supabase typed joins need generated types */}
+                    {(p.owner?.username ?? "?")[0].toUpperCase()}
+                  </span>
+                )}
+                {/* @ts-expect-error — Supabase typed joins need generated types */}
+                @{p.owner?.username ?? "unknown"} · {p.like_count} ♥ · {p.comment_count} 💬
+              </div>
             </div>
           </Link>
         ))}

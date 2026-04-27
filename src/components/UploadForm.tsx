@@ -2,6 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
+function convertToAvif(file: File, quality = 0.8): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext("2d")!.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("AVIF conversion failed"));
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".avif"), { type: "image/avif" }));
+        },
+        "image/avif",
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not load image"));
+    };
+    img.src = objectUrl;
+  });
+}
 import LocationPicker from "@/components/LocationPicker";
 
 type Category = { id: string; name: string; slug: string };
@@ -42,14 +69,16 @@ export default function UploadForm({
     setBusy(true);
 
     try {
+      const avif = await convertToAvif(file);
+
       // 1. Ask our API for a pre-signed R2 PUT URL.
       const urlRes = await fetch("/api/upload-url", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          sizeBytes: file.size,
+          filename: avif.name,
+          contentType: avif.type,
+          sizeBytes: avif.size,
         }),
       });
       if (!urlRes.ok) throw new Error("Could not get upload URL");
@@ -61,8 +90,8 @@ export default function UploadForm({
       // 2. Upload directly to R2.
       const putRes = await fetch(url, {
         method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
+        headers: { "Content-Type": avif.type },
+        body: avif,
       });
       if (!putRes.ok) throw new Error("R2 upload failed");
 
@@ -81,8 +110,8 @@ export default function UploadForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           storageKey: key,
-          mimeType: file.type,
-          fileSizeBytes: file.size,
+          mimeType: avif.type,
+          fileSizeBytes: avif.size,
           title,
           description: description || undefined,
           licenseCode,
