@@ -76,5 +76,18 @@ export async function POST(req: Request) {
     );
   }
 
+  // Thumbnail variant
+  if (input.thumbnail) {
+    await supabase.from("photo_variants").insert({
+      photo_id: photo.id,
+      variant: "thumbnail",
+      storage_key: input.thumbnail.storageKey,
+      width: input.thumbnail.width,
+      height: input.thumbnail.height,
+      mime_type: "image/avif",
+      file_size_bytes: input.thumbnail.fileSizeBytes ?? null,
+    });
+  }
+
   return NextResponse.json({ id: photo.id });
 }

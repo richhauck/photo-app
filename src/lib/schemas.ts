@@ -17,6 +17,8 @@ export const uploadUrlSchema = z.object({
   filename: z.string().min(1).max(256),
   contentType: z.enum(ALLOWED_MIME),
   sizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES),
+  includeThumbnail: z.boolean().optional(),
+  thumbnailSizeBytes: z.number().int().positive().max(MAX_UPLOAD_BYTES).optional(),
 });
 
 /** Request body for POST /api/photos — create the DB row after the R2 upload. */
@@ -46,6 +48,15 @@ export const createPhotoSchema = z.object({
   takenAt: z.string().datetime().optional(),
   cameraMake: z.string().max(100).optional(),
   cameraModel: z.string().max(100).optional(),
+
+  thumbnail: z
+    .object({
+      storageKey: z.string().min(1),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      fileSizeBytes: z.number().int().positive().optional(),
+    })
+    .optional(),
 });
 
 export type CreatePhotoInput = z.infer<typeof createPhotoSchema>;

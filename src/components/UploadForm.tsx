@@ -1,26 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function convertToAvif(file: File, quality = 0.8): Promise<File> {
+function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(objectUrl);
-      const canvas = document.createElement("canvas");
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      canvas.getContext("2d")!.drawImage(img, 0, 0);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) return reject(new Error("AVIF conversion failed"));
-          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".avif"), { type: "image/avif" }));
-        },
-        "image/avif",
-        quality,
-      );
+      resolve(img);
     };
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
@@ -28,6 +17,67 @@ function convertToAvif(file: File, quality = 0.8): Promise<File> {
     };
     img.src = objectUrl;
   });
+}
+
+function canvasToAvifFile(
+  canvas: HTMLCanvasElement,
+  name: string,
+  quality = 0.7,
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return reject(new Error("AVIF conversion failed"));
+        resolve(new File([blob], name, { type: "image/avif" }));
+      },
+      "image/avif",
+      quality,
+    );
+  });
+}
+
+async function resizeToAvif(
+  file: File,
+  maxW: number,
+  maxH: number,
+  quality = 0.7,
+): Promise<File> {
+  const img = await loadImage(file);
+  const scale = Math.min(1, maxW / img.naturalWidth, maxH / img.naturalHeight);
+  const w = Math.round(img.naturalWidth * scale);
+  const h = Math.round(img.naturalHeight * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+  return canvasToAvifFile(
+    canvas,
+    file.name.replace(/\.[^.]+$/, ".avif"),
+    quality,
+  );
+}
+
+async function thumbnailToAvif(
+  file: File,
+  size: number,
+  quality = 0.8,
+): Promise<{ file: File; width: number; height: number }> {
+  const img = await loadImage(file);
+  const { naturalWidth: w, naturalHeight: h } = img;
+  const squareSize = Math.min(w, h);
+  const sx = (w - squareSize) / 2;
+  const sy = (h - squareSize) / 2;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  canvas
+    .getContext("2d")!
+    .drawImage(img, sx, sy, squareSize, squareSize, 0, 0, size, size);
+  return {
+    file: await canvasToAvifFile(canvas, "thumbnail.avif", quality),
+    width: size,
+    height: size,
+  };
 }
 import LocationPicker from "@/components/LocationPicker";
 
@@ -59,8 +109,19 @@ export default function UploadForm({
   const [lat, setLat] = useState<string>("");
   const [lng, setLng] = useState<string>("");
   const [locationName, setLocationName] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,9 +130,13 @@ export default function UploadForm({
     setBusy(true);
 
     try {
-      const avif = await convertToAvif(file);
+      // 1. Process original (max 1080×1440) and 350×350 thumbnail in parallel.
+      const [avif, thumb] = await Promise.all([
+        resizeToAvif(file, 1080, 1440),
+        thumbnailToAvif(file, 350),
+      ]);
 
-      // 1. Ask our API for a pre-signed R2 PUT URL.
+      // 2. Get pre-signed URLs for both in one request (same photoId in the keys).
       const urlRes = await fetch("/api/upload-url", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -79,23 +144,38 @@ export default function UploadForm({
           filename: avif.name,
           contentType: avif.type,
           sizeBytes: avif.size,
+          includeThumbnail: true,
+          thumbnailSizeBytes: thumb.file.size,
         }),
       });
       if (!urlRes.ok) throw new Error("Could not get upload URL");
-      const { url, key } = (await urlRes.json()) as {
-        url: string;
-        key: string;
-      };
+      const { url, key, thumbnailUrl, thumbnailKey } =
+        (await urlRes.json()) as {
+          url: string;
+          key: string;
+          thumbnailUrl: string;
+          thumbnailKey: string;
+        };
 
-      // 2. Upload directly to R2.
-      const putRes = await fetch(url, {
-        method: "PUT",
-        headers: { "Content-Type": avif.type },
-        body: avif,
-      });
-      if (!putRes.ok) throw new Error("R2 upload failed");
+      // 3. Upload both to R2 in parallel.
+      await Promise.all([
+        fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": avif.type },
+          body: avif,
+        }).then((r) => {
+          if (!r.ok) throw new Error("R2 upload failed");
+        }),
+        fetch(thumbnailUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "image/avif" },
+          body: thumb.file,
+        }).then((r) => {
+          if (!r.ok) throw new Error("R2 thumbnail upload failed");
+        }),
+      ]);
 
-      // 3. Create the DB row.
+      // 4. Create the DB row.
       const location =
         lat && lng
           ? {
@@ -119,6 +199,12 @@ export default function UploadForm({
           categoryIds,
           galleryIds: [],
           location,
+          thumbnail: {
+            storageKey: thumbnailKey,
+            width: thumb.width,
+            height: thumb.height,
+            fileSizeBytes: thumb.file.size,
+          },
         }),
       });
       if (!photoRes.ok) throw new Error("Failed to save photo");
@@ -145,6 +231,13 @@ export default function UploadForm({
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           required
         />
+        {previewUrl && (
+          <img
+            src={previewUrl}
+            alt="Preview"
+            className="mt-3 max-h-72 w-full rounded object-contain"
+          />
+        )}
       </div>
 
       <div>
@@ -227,8 +320,12 @@ export default function UploadForm({
       </div>
 
       <fieldset className="rounded border p-3">
-        <legend className="px-1 text-sm font-medium">Location (optional)</legend>
-        <p className="mb-2 text-xs text-gray-600">Click the map to drop a pin.</p>
+        <legend className="px-1 text-sm font-medium">
+          Location (optional)
+        </legend>
+        <p className="mb-2 text-xs text-gray-600">
+          Click the map to drop a pin.
+        </p>
         <LocationPicker
           lat={lat}
           lng={lng}

@@ -34,5 +34,16 @@ export async function POST(req: Request) {
     expiresInSeconds: 60,
   });
 
+  if (parsed.data.includeThumbnail) {
+    const thumbnailKey = `users/${user.id}/photos/${photoId}/thumbnail.avif`;
+    const thumbnailUrl = await createUploadUrl({
+      key: thumbnailKey,
+      contentType: "image/avif",
+      maxBytes: parsed.data.thumbnailSizeBytes ?? parsed.data.sizeBytes,
+      expiresInSeconds: 60,
+    });
+    return NextResponse.json({ url, key, thumbnailUrl, thumbnailKey });
+  }
+
   return NextResponse.json({ url, key });
 }
