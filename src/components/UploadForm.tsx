@@ -339,22 +339,26 @@ export default function UploadForm({
         </select>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium">Visibility</label>
-        <select
-          className="w-full rounded border px-3 py-2"
-          value={visibility}
-          onChange={(e) =>
-            setVisibility(e.target.value as "public" | "unlisted" | "private")
-          }
-        >
+      <fieldset>
+        <legend className="mb-1 text-sm font-medium">Visibility</legend>
+        <div className="space-y-1">
           {VISIBILITY.map((v) => (
-            <option key={v.value} value={v.value}>
+            <label
+              key={v.value}
+              className="flex cursor-pointer items-center gap-2 text-sm"
+            >
+              <input
+                type="radio"
+                name="visibility"
+                value={v.value}
+                checked={visibility === v.value}
+                onChange={() => setVisibility(v.value)}
+              />
               {v.label}
-            </option>
+            </label>
           ))}
-        </select>
-      </div>
+        </div>
+      </fieldset>
 
       <fieldset className="rounded border p-3">
         <legend className="px-1 text-sm font-medium">
