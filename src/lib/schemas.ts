@@ -81,3 +81,25 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(1000).optional(),
   avatarUrl: z.string().url().max(500).optional(),
 });
+
+const expeditionStepSchema = z.object({
+  description: z.string().min(1).max(5000),
+  locationName: z.string().max(200).optional(),
+  lat: z.number().gte(-90).lte(90).optional(),
+  lng: z.number().gte(-180).lte(180).optional(),
+});
+
+/** Request body for POST /api/expeditions */
+export const createExpeditionSchema = z.object({
+  slug: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
+  title: z.string().min(1).max(200),
+  description: z.string().max(5000).optional(),
+  coverStorageKey: z.string().optional(),
+  steps: z.array(expeditionStepSchema).max(50).default([]),
+});
+
+export type CreateExpeditionInput = z.infer<typeof createExpeditionSchema>;

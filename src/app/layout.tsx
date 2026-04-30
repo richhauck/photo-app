@@ -26,6 +26,9 @@ export default async function RootLayout({
             <Link href="/" className="font-semibold">
               📷 Photo App
             </Link>
+            <Link href="/expeditions" className="text-sm underline">
+              Expeditions
+            </Link>
             <div className="flex items-center gap-4 text-sm">
               {user ? (
                 <>
