@@ -20,14 +20,66 @@ export default async function PublicProfilePage({
 
   if (!profile) notFound();
 
-  const { data: photos } = await supabase
-    .from("photos")
-    .select("id, title, storage_key, width, height")
-    .eq("owner_id", profile.id)
-    .eq("visibility", "public")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(48);
+  const [{ data: photos }, { data: userContributions }] = await Promise.all([
+    supabase
+      .from("photos")
+      .select("id, title, storage_key, width, height")
+      .eq("owner_id", profile.id)
+      .eq("visibility", "public")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(48),
+    supabase
+      .from("expedition_step_photos")
+      .select("step_id, expedition_steps(expedition_id)")
+      .eq("contributor_id", profile.id),
+  ]);
+
+  // Determine which expeditions this user has completed (contributed to every step).
+  let completedExpeditions: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    badge_storage_key: string | null;
+  }> = [];
+
+  if (userContributions && userContributions.length > 0) {
+    // Map expedition_id → distinct step_ids the user contributed to.
+    const contributedByExpedition = new Map<string, Set<string>>();
+    for (const row of userContributions) {
+      const step = row.expedition_steps as unknown as { expedition_id: string } | null;
+      if (!step) continue;
+      const expId = step.expedition_id;
+      if (!contributedByExpedition.has(expId)) {
+        contributedByExpedition.set(expId, new Set());
+      }
+      contributedByExpedition.get(expId)!.add(row.step_id);
+    }
+
+    const expeditionIds = Array.from(contributedByExpedition.keys());
+
+    const { data: expeditionDetails } = await supabase
+      .from("expeditions")
+      .select("id, slug, title, badge_storage_key, expedition_steps(id)")
+      .in("id", expeditionIds);
+
+    if (expeditionDetails) {
+      completedExpeditions = expeditionDetails
+        .filter((exp) => {
+          const steps = (exp.expedition_steps as { id: string }[]) ?? [];
+          if (steps.length === 0) return false;
+          return (contributedByExpedition.get(exp.id)?.size ?? 0) >= steps.length;
+        })
+        .map((exp) => ({
+          id: exp.id,
+          slug: exp.slug,
+          title: exp.title,
+          badge_storage_key: exp.badge_storage_key,
+        }));
+    }
+  }
+
+  const badgedExpeditions = completedExpeditions.filter((e) => e.badge_storage_key);
 
   return (
     <div className="mx-auto max-w-3xl py-16">
@@ -60,6 +112,44 @@ export default async function PublicProfilePage({
           </div>
         </div>
       </div>
+
+      {badgedExpeditions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-lg font-semibold">Badges</h2>
+          <div className="flex flex-wrap gap-4">
+            {badgedExpeditions.map((e) => (
+              <Link key={e.id} href={`/expeditions/${e.slug}`} title={e.title}>
+                <img
+                  src={publicUrl(e.badge_storage_key!)}
+                  alt={e.title}
+                  className="h-16 w-16 rounded-xl border object-cover shadow-sm transition hover:opacity-90"
+                />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {completedExpeditions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-lg font-semibold">Completed Expeditions</h2>
+          <ul className="space-y-2">
+            {completedExpeditions.map((e) => (
+              <li key={e.id} className="flex items-center gap-3">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700">
+                  ✓
+                </span>
+                <Link
+                  href={`/expeditions/${e.slug}`}
+                  className="text-sm text-gray-800 hover:underline"
+                >
+                  {e.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {photos && photos.length > 0 && (
         <div className="mt-8">
