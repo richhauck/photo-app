@@ -1,22 +1,44 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { publicUrl } from "@/lib/r2";
+import SearchInput from "@/components/SearchInput";
+import Pagination from "@/components/Pagination";
 
-export default async function HomeFeed() {
+const PAGE_SIZE = 24;
+
+export default async function HomeFeed({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const { q = "", page: pageStr = "1" } = await searchParams;
+  const page = Math.max(1, parseInt(pageStr, 10) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   const supabase = await createClient();
 
   // RLS already filters to public + unlisted + own.
   // For the home feed we only want public.
-  const { data: photos, error } = await supabase
+  let query = supabase
     .from("photos")
     .select(
       "id, title, storage_key, like_count, comment_count, created_at, owner:profiles!photos_owner_id_fkey(username, display_name, avatar_url)",
+      { count: "exact" },
     )
     .eq("visibility", "public")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
-    .limit(60);
+    .range(from, to);
+
+  if (q.trim()) {
+    query = query.or(`title.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
+  }
+
+  const { data: photos, count, error } = await query;
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   if (error) {
     return <p className="p-8 text-red-600">Failed to load feed: {error.message}</p>;
@@ -24,14 +46,25 @@ export default async function HomeFeed() {
 
   return (
     <div className="mx-auto max-w-5xl py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Recent photos</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-semibold">Recent photos</h1>
+        <Suspense>
+          <SearchInput placeholder="Search photos…" />
+        </Suspense>
+      </div>
 
       {photos && photos.length === 0 && (
         <p className="text-gray-600">
-          No photos yet.{" "}
-          <Link className="underline" href="/upload">
-            Upload the first one.
-          </Link>
+          {q.trim() ? (
+            <>No photos match &ldquo;{q}&rdquo;.</>
+          ) : (
+            <>
+              No photos yet.{" "}
+              <Link className="underline" href="/upload">
+                Upload the first one.
+              </Link>
+            </>
+          )}
         </p>
       )}
 
@@ -77,6 +110,15 @@ export default async function HomeFeed() {
           </Link>
         ))}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} pathname="/" q={q} />
+
+      {count !== null && count > 0 && (
+        <p className="mt-4 text-center text-xs text-gray-400">
+          {count} photo{count !== 1 ? "s" : ""}
+          {q.trim() ? ` matching "${q}"` : ""}
+        </p>
+      )}
     </div>
   );
 }
