@@ -9,7 +9,7 @@ export default async function ExpeditionsPage() {
   const { data: expeditions, error } = await supabase
     .from("expeditions")
     .select(
-      `id, slug, title, description, cover_storage_key, like_count, comment_count, created_at,
+      `id, slug, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
        owner:profiles!expeditions_owner_id_fkey(username, display_name, avatar_url)`,
     )
     .order("created_at", { ascending: false })
@@ -60,6 +60,13 @@ export default async function ExpeditionsPage() {
                 <div className="flex h-full items-center justify-center text-4xl text-gray-300">
                   🗺️
                 </div>
+              )}
+              {exp.badge_storage_key && (
+                <img
+                  src={publicUrl(exp.badge_storage_key)}
+                  alt=""
+                  className="absolute bottom-2 left-2 h-10 w-10 rounded-md border-2 border-white object-cover shadow"
+                />
               )}
             </div>
             <div className="p-4">

@@ -65,6 +65,8 @@ export default function CreateExpeditionForm() {
   const [description, setDescription] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [badgeFile, setBadgeFile] = useState<File | null>(null);
+  const [badgePreview, setBadgePreview] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>([emptyStep()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +81,13 @@ export default function CreateExpeditionForm() {
     setCoverPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [coverFile]);
+
+  useEffect(() => {
+    if (!badgeFile) { setBadgePreview(null); return; }
+    const url = URL.createObjectURL(badgeFile);
+    setBadgePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [badgeFile]);
 
   function updateStep(i: number, patch: Partial<Step>) {
     setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -98,35 +107,31 @@ export default function CreateExpeditionForm() {
     setBusy(true);
 
     try {
-      let coverStorageKey: string | undefined;
-
-      if (coverFile) {
-        const avif = await resizeToAvif(coverFile, 1920, 1080);
+      async function uploadAvif(file: File, maxW: number, maxH: number, label: string) {
+        const avif = await resizeToAvif(file, maxW, maxH);
         const urlRes = await fetch("/api/upload-url", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            filename: avif.name,
-            contentType: avif.type,
-            sizeBytes: avif.size,
-          }),
+          body: JSON.stringify({ filename: avif.name, contentType: avif.type, sizeBytes: avif.size }),
         });
-        if (!urlRes.ok) throw new Error("Could not get cover upload URL");
+        if (!urlRes.ok) throw new Error(`Could not get ${label} upload URL`);
         const { url, key } = (await urlRes.json()) as { url: string; key: string };
-        const r2Res = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": avif.type },
-          body: avif,
-        });
-        if (!r2Res.ok) throw new Error("Cover upload failed");
-        coverStorageKey = key;
+        const r2Res = await fetch(url, { method: "PUT", headers: { "Content-Type": avif.type }, body: avif });
+        if (!r2Res.ok) throw new Error(`${label} upload failed`);
+        return key;
       }
+
+      const [coverStorageKey, badgeStorageKey] = await Promise.all([
+        coverFile ? uploadAvif(coverFile, 1920, 1080, "Cover") : Promise.resolve(undefined),
+        badgeFile ? uploadAvif(badgeFile, 512, 512, "Badge") : Promise.resolve(undefined),
+      ]);
 
       const payload = {
         slug,
         title,
         description: description || undefined,
         coverStorageKey,
+        badgeStorageKey,
         steps: steps
           .filter((s) => s.description.trim())
           .map((s) => ({
@@ -210,6 +215,25 @@ export default function CreateExpeditionForm() {
             src={coverPreview}
             alt="Cover preview"
             className="mt-3 max-h-48 w-full rounded object-cover"
+          />
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Badge (optional)</label>
+        <p className="mb-2 text-xs text-gray-500">
+          A small emblem or icon that represents this expedition.
+        </p>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          onChange={(e) => setBadgeFile(e.target.files?.[0] ?? null)}
+        />
+        {badgePreview && (
+          <img
+            src={badgePreview}
+            alt="Badge preview"
+            className="mt-3 h-24 w-24 rounded-lg object-cover border"
           />
         )}
       </div>

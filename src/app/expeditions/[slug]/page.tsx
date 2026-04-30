@@ -37,7 +37,7 @@ export default async function ExpeditionDetailPage({
   const { data: expedition } = await supabase
     .from("expeditions")
     .select(
-      `id, slug, title, description, cover_storage_key, like_count, comment_count, created_at,
+      `id, slug, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
        owner:profiles!expeditions_owner_id_fkey(id, username, display_name, avatar_url)`,
     )
     .eq("slug", slug)
@@ -87,27 +87,36 @@ export default async function ExpeditionDetailPage({
       )}
 
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{expedition.title}</h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
-            {owner?.avatar_url ? (
-              <img
-                src={owner.avatar_url}
-                alt={owner.username ?? ""}
-                className="h-7 w-7 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
-                {(owner?.username ?? "?")[0].toUpperCase()}
+        <div className="flex items-start gap-4">
+          {expedition.badge_storage_key && (
+            <img
+              src={publicUrl(expedition.badge_storage_key)}
+              alt=""
+              className="h-16 w-16 shrink-0 rounded-xl border object-cover shadow-sm"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-semibold">{expedition.title}</h1>
+            <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+              {owner?.avatar_url ? (
+                <img
+                  src={owner.avatar_url}
+                  alt={owner.username ?? ""}
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-600">
+                  {(owner?.username ?? "?")[0].toUpperCase()}
+                </span>
+              )}
+              <span>
+                by{" "}
+                <Link href={`/profile/${owner?.username}`} className="hover:underline">
+                  @{owner?.username}
+                </Link>{" "}
+                · {new Date(expedition.created_at).toLocaleDateString()}
               </span>
-            )}
-            <span>
-              by{" "}
-              <Link href={`/profile/${owner?.username}`} className="hover:underline">
-                @{owner?.username}
-              </Link>{" "}
-              · {new Date(expedition.created_at).toLocaleDateString()}
-            </span>
+            </div>
           </div>
         </div>
         <ExpeditionLikeButton

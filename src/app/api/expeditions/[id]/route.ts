@@ -21,10 +21,10 @@ export async function PATCH(
   }
   const input = parsed.data;
 
-  // Fetch current row to verify ownership and get the old cover key.
+  // Fetch current row to verify ownership and get the old cover/badge keys.
   const { data: existing } = await supabase
     .from("expeditions")
-    .select("id, owner_id, cover_storage_key")
+    .select("id, owner_id, cover_storage_key, badge_storage_key")
     .eq("id", id)
     .maybeSingle();
 
@@ -41,6 +41,9 @@ export async function PATCH(
   };
   if (input.coverStorageKey !== undefined) {
     updates.cover_storage_key = input.coverStorageKey;
+  }
+  if (input.badgeStorageKey !== undefined) {
+    updates.badge_storage_key = input.badgeStorageKey;
   }
 
   const { data: updated, error: updateErr } = await supabase
@@ -90,13 +93,20 @@ export async function PATCH(
     }
   }
 
-  // If the cover changed, clean up the old R2 object.
+  // Clean up replaced R2 objects.
   if (
     input.coverStorageKey !== undefined &&
     existing.cover_storage_key &&
     existing.cover_storage_key !== input.coverStorageKey
   ) {
     await deleteObject(existing.cover_storage_key).catch(() => null);
+  }
+  if (
+    input.badgeStorageKey !== undefined &&
+    existing.badge_storage_key &&
+    existing.badge_storage_key !== input.badgeStorageKey
+  ) {
+    await deleteObject(existing.badge_storage_key).catch(() => null);
   }
 
   return NextResponse.json({ slug: updated.slug });
@@ -115,7 +125,7 @@ export async function DELETE(
 
   const { data: existing } = await supabase
     .from("expeditions")
-    .select("id, owner_id, cover_storage_key")
+    .select("id, owner_id, cover_storage_key, badge_storage_key")
     .eq("id", id)
     .maybeSingle();
 
@@ -127,9 +137,10 @@ export async function DELETE(
   const { error: deleteErr } = await supabase.from("expeditions").delete().eq("id", id);
   if (deleteErr) return NextResponse.json({ error: deleteErr.message }, { status: 500 });
 
-  if (existing.cover_storage_key) {
-    await deleteObject(existing.cover_storage_key).catch(() => null);
-  }
+  await Promise.all([
+    existing.cover_storage_key ? deleteObject(existing.cover_storage_key).catch(() => null) : null,
+    existing.badge_storage_key ? deleteObject(existing.badge_storage_key).catch(() => null) : null,
+  ]);
 
   return new NextResponse(null, { status: 204 });
 }

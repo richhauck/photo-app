@@ -35,7 +35,7 @@ export default async function EditExpeditionPage({
 
   const { data: expedition } = await supabase
     .from("expeditions")
-    .select("id, owner_id, slug, title, description, cover_storage_key")
+    .select("id, owner_id, slug, title, description, cover_storage_key, badge_storage_key")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -67,6 +67,7 @@ export default async function EditExpeditionPage({
         initialSlug={expedition.slug}
         initialDescription={expedition.description ?? ""}
         initialCoverStorageKey={expedition.cover_storage_key ?? null}
+        initialBadgeStorageKey={expedition.badge_storage_key ?? null}
         initialSteps={initialSteps}
       />
     </div>

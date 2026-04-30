@@ -69,6 +69,7 @@ export default function EditExpeditionForm({
   initialSlug,
   initialDescription,
   initialCoverStorageKey,
+  initialBadgeStorageKey,
   initialSteps,
 }: {
   expeditionId: string;
@@ -76,22 +77,22 @@ export default function EditExpeditionForm({
   initialSlug: string;
   initialDescription: string;
   initialCoverStorageKey: string | null;
+  initialBadgeStorageKey: string | null;
   initialSteps: InitialStep[];
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
   const [slug, setSlug] = useState(initialSlug);
-  const [slugManual] = useState(true); // always treat as manual on edit
   const [description, setDescription] = useState(initialDescription);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [badgeFile, setBadgeFile] = useState<File | null>(null);
+  const [badgePreview, setBadgePreview] = useState<string | null>(null);
   const [steps, setSteps] = useState<Step[]>(
     initialSteps.length > 0 ? initialSteps.map(hydrateStep) : [emptyStep()],
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  void slugManual;
 
   useEffect(() => {
     if (!coverFile) { setCoverPreview(null); return; }
@@ -99,6 +100,13 @@ export default function EditExpeditionForm({
     setCoverPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [coverFile]);
+
+  useEffect(() => {
+    if (!badgeFile) { setBadgePreview(null); return; }
+    const url = URL.createObjectURL(badgeFile);
+    setBadgePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [badgeFile]);
 
   function updateStep(i: number, patch: Partial<Step>) {
     setSteps((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
@@ -118,35 +126,31 @@ export default function EditExpeditionForm({
     setBusy(true);
 
     try {
-      let coverStorageKey: string | undefined;
-
-      if (coverFile) {
-        const avif = await resizeToAvif(coverFile, 1920, 1080);
+      async function uploadAvif(file: File, maxW: number, maxH: number, label: string) {
+        const avif = await resizeToAvif(file, maxW, maxH);
         const urlRes = await fetch("/api/upload-url", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            filename: avif.name,
-            contentType: avif.type,
-            sizeBytes: avif.size,
-          }),
+          body: JSON.stringify({ filename: avif.name, contentType: avif.type, sizeBytes: avif.size }),
         });
-        if (!urlRes.ok) throw new Error("Could not get cover upload URL");
+        if (!urlRes.ok) throw new Error(`Could not get ${label} upload URL`);
         const { url, key } = (await urlRes.json()) as { url: string; key: string };
-        const r2Res = await fetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": avif.type },
-          body: avif,
-        });
-        if (!r2Res.ok) throw new Error("Cover upload failed");
-        coverStorageKey = key;
+        const r2Res = await fetch(url, { method: "PUT", headers: { "Content-Type": avif.type }, body: avif });
+        if (!r2Res.ok) throw new Error(`${label} upload failed`);
+        return key;
       }
+
+      const [coverStorageKey, badgeStorageKey] = await Promise.all([
+        coverFile ? uploadAvif(coverFile, 1920, 1080, "Cover") : Promise.resolve(undefined),
+        badgeFile ? uploadAvif(badgeFile, 512, 512, "Badge") : Promise.resolve(undefined),
+      ]);
 
       const payload = {
         slug: slugify(slug) || slugify(title),
         title,
         description: description || undefined,
         coverStorageKey,
+        badgeStorageKey,
         steps: steps
           .filter((s) => s.description.trim())
           .map((s) => ({
@@ -243,6 +247,37 @@ export default function EditExpeditionForm({
         {initialCoverStorageKey && (
           <p className="mt-1 text-xs text-gray-500">
             Upload a new image to replace the current cover.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Badge</label>
+        <p className="mb-2 text-xs text-gray-500">
+          A small emblem or icon that represents this expedition.
+        </p>
+        {initialBadgeStorageKey && !badgePreview && (
+          <img
+            src={publicUrl(initialBadgeStorageKey)}
+            alt="Current badge"
+            className="mb-2 h-24 w-24 rounded-lg object-cover border"
+          />
+        )}
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          onChange={(e) => setBadgeFile(e.target.files?.[0] ?? null)}
+        />
+        {badgePreview && (
+          <img
+            src={badgePreview}
+            alt="New badge preview"
+            className="mt-3 h-24 w-24 rounded-lg object-cover border"
+          />
+        )}
+        {initialBadgeStorageKey && (
+          <p className="mt-1 text-xs text-gray-500">
+            Upload a new image to replace the current badge.
           </p>
         )}
       </div>

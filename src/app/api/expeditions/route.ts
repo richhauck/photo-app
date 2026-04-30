@@ -24,6 +24,7 @@ export async function POST(req: Request) {
       title: input.title,
       description: input.description ?? null,
       cover_storage_key: input.coverStorageKey ?? null,
+      badge_storage_key: input.badgeStorageKey ?? null,
     })
     .select("id, slug")
     .single();

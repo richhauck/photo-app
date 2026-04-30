@@ -99,6 +99,7 @@ export const createExpeditionSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
   coverStorageKey: z.string().optional(),
+  badgeStorageKey: z.string().optional(),
   steps: z.array(expeditionStepSchema).max(50).default([]),
 });
 
