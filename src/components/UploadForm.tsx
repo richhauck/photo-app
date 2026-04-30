@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 function loadImage(file: File): Promise<HTMLImageElement> {
@@ -98,6 +98,8 @@ export default function UploadForm({
   licenses: License[];
 }) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -225,18 +227,53 @@ export default function UploadForm({
 
       <div>
         <label className="mb-1 block text-sm font-medium">Photo</label>
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const dropped = e.dataTransfer.files[0];
+            if (dropped) setFile(dropped);
+          }}
+          className={`flex cursor-pointer flex-col items-center justify-center rounded border-2 border-dashed px-4 py-8 text-sm transition-colors ${
+            isDragging
+              ? "border-black bg-gray-100 text-black"
+              : "border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400"
+          }`}
+        >
+          {previewUrl ? (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="max-h-72 w-full rounded object-contain"
+            />
+          ) : (
+            <>
+              <svg className="mb-2 h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <span>Drag &amp; drop a photo here, or click to browse</span>
+            </>
+          )}
+        </div>
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/jpeg,image/png,image/webp,image/avif"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="hidden"
           required
         />
         {previewUrl && (
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="mt-3 max-h-72 w-full rounded object-contain"
-          />
+          <button
+            type="button"
+            onClick={() => setFile(null)}
+            className="mt-1 text-xs text-red-600 underline"
+          >
+            Remove photo
+          </button>
         )}
       </div>
 
