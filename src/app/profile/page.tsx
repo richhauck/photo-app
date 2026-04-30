@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import ProfileEditForm from "@/components/ProfileEditForm";
+import DeleteAccountButton from "@/components/DeleteAccountButton";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -31,13 +32,17 @@ export default async function ProfilePage() {
               />
             ) : (
               <span className="text-4xl font-semibold text-gray-500">
-                {(profile?.display_name || profile?.username || "?")[0]?.toUpperCase() ?? "?"}
+                {(profile?.display_name ||
+                  profile?.username ||
+                  "?")[0]?.toUpperCase() ?? "?"}
               </span>
             )}
           </div>
 
           <div className="text-center sm:text-left">
-            <p className="text-sm uppercase tracking-[0.18em] text-gray-500">Profile</p>
+            <p className="text-sm uppercase tracking-[0.18em] text-gray-500">
+              Profile
+            </p>
             <h1 className="mt-2 text-3xl font-semibold text-gray-900">
               {profile?.display_name || profile?.username || "Your profile"}
             </h1>
@@ -60,6 +65,16 @@ export default async function ProfilePage() {
           displayName={profile?.display_name ?? null}
           username={profile?.username ?? null}
         />
+
+        <div className="mt-12 border-t border-gray-200 pt-8">
+          <h2 className="text-lg font-semibold text-gray-900">Danger zone</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Permanently remove your account and all associated content.
+          </p>
+          <div className="mt-4">
+            <DeleteAccountButton />
+          </div>
+        </div>
       </div>
     </div>
   );
