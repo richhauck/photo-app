@@ -26,6 +26,17 @@ function parseWkbPoint(hex: string | null | undefined): { lat: number; lng: numb
   }
 }
 
+type Variant = { variant: string; storage_key: string };
+
+type TeaserPhoto = {
+  id: string;
+  photo: { id: string; title: string; storage_key: string; photo_variants: Variant[] };
+};
+
+function thumbKey(storageKey: string, variants: Variant[]): string {
+  return variants.find((v) => v.variant === "thumbnail")?.storage_key ?? storageKey;
+}
+
 export default async function ExpeditionDetailPage({
   params,
 }: {
@@ -47,7 +58,16 @@ export default async function ExpeditionDetailPage({
 
   const { data: steps } = await supabase
     .from("expedition_steps")
-    .select("id, position, description, location_name, location")
+    .select(
+      `id, position, description, location_name, location,
+       expedition_step_photos(
+         id,
+         photo:photos!expedition_step_photos_photo_id_fkey(
+           id, title, storage_key,
+           photo_variants(variant, storage_key)
+         )
+       )`,
+    )
     .eq("expedition_id", expedition.id)
     .order("position", { ascending: true });
 
@@ -143,12 +163,34 @@ export default async function ExpeditionDetailPage({
         <p className="mt-4 whitespace-pre-wrap text-gray-800">{expedition.description}</p>
       )}
 
+      <div className="mt-6">
+        {user ? (
+          <a
+            href="#steps"
+            className="inline-block rounded-lg bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-800"
+          >
+            Join the expedition →
+          </a>
+        ) : (
+          <Link
+            href="/login"
+            className="inline-block rounded-lg border px-5 py-2.5 text-sm font-medium hover:bg-gray-50"
+          >
+            Log in to join the expedition
+          </Link>
+        )}
+      </div>
+
       {steps && steps.length > 0 && (
-        <section className="mt-8">
-          <h2 className="mb-4 text-lg font-semibold">Steps</h2>
-          <ol className="space-y-6">
+        <section id="steps" className="mt-10">
+          <h2 className="mb-6 text-lg font-semibold">Steps</h2>
+          <ol className="space-y-10">
             {steps.map((step, i) => {
               const coords = parseWkbPoint(step.location as string | null);
+              const stepPhotos = (step.expedition_step_photos as unknown as TeaserPhoto[]) ?? [];
+              const teaser = stepPhotos.slice(0, 5);
+              const total = stepPhotos.length;
+
               return (
                 <li key={step.id} className="flex gap-4">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-sm font-semibold text-white">
@@ -168,6 +210,44 @@ export default async function ExpeditionDetailPage({
                         />
                       </div>
                     )}
+
+                    {/* Photo teaser strip */}
+                    <div className="mt-4">
+                      {teaser.length > 0 ? (
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1.5">
+                            {teaser.map((sp) => (
+                              <Link
+                                key={sp.id}
+                                href={`/expeditions/${slug}/steps/${step.id}`}
+                                className="block h-16 w-16 overflow-hidden rounded border bg-gray-100 transition hover:opacity-90"
+                              >
+                                <img
+                                  src={publicUrl(
+                                    thumbKey(sp.photo.storage_key, sp.photo.photo_variants ?? []),
+                                  )}
+                                  alt={sp.photo.title}
+                                  className="h-full w-full object-cover"
+                                />
+                              </Link>
+                            ))}
+                          </div>
+                          <Link
+                            href={`/expeditions/${slug}/steps/${step.id}`}
+                            className="text-sm text-gray-500 hover:underline"
+                          >
+                            {total > 5 ? `View all (${total})` : "View all"} →
+                          </Link>
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/expeditions/${slug}/steps/${step.id}`}
+                          className="text-sm text-gray-500 hover:underline"
+                        >
+                          {user ? "Be the first to add a photo →" : "No photos yet →"}
+                        </Link>
+                      )}
+                    </div>
                   </div>
                 </li>
               );

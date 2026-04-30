@@ -65,6 +65,21 @@ export default async function PhotoPage({
         .maybeSingle()
     : { data: null };
 
+  const { data: expeditionLinks } = await supabase
+    .from("expedition_step_photos")
+    .select(
+      `step:expedition_steps!expedition_step_photos_step_id_fkey(
+         id, position,
+         expedition:expeditions!expedition_steps_expedition_id_fkey(slug, title)
+       )`,
+    )
+    .eq("photo_id", id);
+
+  type ExpeditionLink = {
+    step: { id: string; position: number; expedition: { slug: string; title: string } };
+  };
+  const links = (expeditionLinks as unknown as ExpeditionLink[]) ?? [];
+
   const owner = photo.owner as unknown as {
     id: string;
     username: string | null;
@@ -143,6 +158,25 @@ export default async function PhotoPage({
             lng={coords.lng}
             label={photo.location_name}
           />
+        </div>
+      )}
+
+      {links.length > 0 && (
+        <div className="mt-6">
+          <h2 className="mb-2 text-sm font-medium text-gray-700">Part of</h2>
+          <ul className="space-y-1">
+            {links.map(({ step }) => (
+              <li key={step.id}>
+                <Link
+                  href={`/expeditions/${step.expedition.slug}/steps/${step.id}`}
+                  className="text-sm hover:underline"
+                >
+                  {step.expedition.title}
+                  <span className="text-gray-400"> · Step {step.position}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

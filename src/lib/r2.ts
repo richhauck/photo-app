@@ -58,7 +58,14 @@ export async function createUploadUrl(params: {
 
 /** Build the public URL for an object key (via your public domain or r2.dev). */
 export function publicUrl(key: string) {
-  return `${R2_PUBLIC_BASE_URL.replace(/\/$/, "")}/${key}`;
+  // NEXT_PUBLIC_R2_PUBLIC_BASE_URL is available in both server and client bundles.
+  // R2_PUBLIC_BASE_URL is the server-only fallback for backwards compat.
+  const base = (
+    process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL ??
+    process.env.R2_PUBLIC_BASE_URL ??
+    ""
+  ).replace(/\/$/, "");
+  return `${base}/${key}`;
 }
 
 /** Delete an object. Use when a photo row is hard-deleted. */
