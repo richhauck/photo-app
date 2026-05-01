@@ -8,6 +8,7 @@ type Comment = {
   id: string;
   body: string;
   created_at: string;
+  author_id: string;
   author: { username: string | null; display_name: string | null } | null;
 };
 
@@ -19,15 +20,18 @@ export default function ExpeditionComments({
   canPost: boolean;
 }) {
   const [comments, setComments] = useState<Comment[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  const supabase = createClient();
 
   async function load() {
-    const supabase = createClient();
     const { data } = await supabase
       .from("expedition_comments")
       .select(
-        "id, body, created_at, author:profiles!expedition_comments_author_id_fkey(username, display_name)",
+        "id, body, created_at, author_id, author:profiles!expedition_comments_author_id_fkey(username, display_name)",
       )
       .eq("expedition_id", expeditionId)
       .is("deleted_at", null)
@@ -38,14 +42,15 @@ export default function ExpeditionComments({
 
   useEffect(() => {
     load();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUserId(user?.id ?? null);
+    });
   }, [expeditionId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!body.trim()) return;
     setBusy(true);
-
-    const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -59,6 +64,12 @@ export default function ExpeditionComments({
       await load();
     }
     setBusy(false);
+  }
+
+  async function deleteComment(id: string) {
+    await fetch(`/api/expedition-comments/${id}`, { method: "DELETE" });
+    setConfirming(null);
+    await load();
   }
 
   return (
@@ -85,16 +96,44 @@ export default function ExpeditionComments({
       <ul className="space-y-4">
         {comments.map((c) => (
           <li key={c.id} className="border-b pb-3">
-            <p className="text-sm text-gray-600">
-              {c.author?.username ? (
-                <Link href={`/profile/${c.author.username}`} className="hover:underline">
-                  @{c.author.username}
-                </Link>
-              ) : (
-                "@unknown"
-              )}{" "}
-              · {new Date(c.created_at).toLocaleString()}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm text-gray-600">
+                {c.author?.username ? (
+                  <Link href={`/profile/${c.author.username}`} className="hover:underline">
+                    @{c.author.username}
+                  </Link>
+                ) : (
+                  "@unknown"
+                )}{" "}
+                · {new Date(c.created_at).toLocaleString()}
+              </p>
+              {currentUserId === c.author_id && (
+                confirming === c.id ? (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      onClick={() => setConfirming(null)}
+                      className="text-xs text-gray-500 hover:underline"
+                    >
+                      Cancel
+
+                    </button>
+                    <button
+                      onClick={() => deleteComment(c.id)}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Confirm delete
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirming(c.id)}
+                    className="shrink-0 text-xs text-gray-400 hover:text-red-600"
+                  >
+                    Delete
+                  </button>
+                )
+              )}
+            </div>
             <p className="mt-1 whitespace-pre-wrap">{c.body}</p>
           </li>
         ))}
