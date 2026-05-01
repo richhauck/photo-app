@@ -9,21 +9,18 @@ export default async function UploadPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [
-    { data: categories, error: categoriesError },
-    { data: licenses, error: licensesError },
-  ] = await Promise.all([
+  const [, { data: licenses, error: licensesError }] = await Promise.all([
     supabase.from("categories").select("id, name, slug").order("name"),
     supabase.from("licenses").select("code, name").order("code"),
   ]);
 
-  if (categoriesError) throw new Error(`Failed to load categories: ${categoriesError.message}`);
-  if (licensesError) throw new Error(`Failed to load licenses: ${licensesError.message}`);
+  if (licensesError)
+    throw new Error(`Failed to load licenses: ${licensesError.message}`);
 
   return (
     <div className="mx-auto max-w-lg py-10">
       <h1 className="mb-6 text-2xl font-semibold">Upload a photo</h1>
-      <UploadForm categories={categories ?? []} licenses={licenses ?? []} />
+      <UploadForm licenses={licenses ?? []} />
     </div>
   );
 }

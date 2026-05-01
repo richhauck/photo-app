@@ -82,7 +82,6 @@ async function thumbnailToAvif(
 }
 import LocationPicker from "@/components/LocationPicker";
 
-type Category = { id: string; name: string; slug: string };
 type License = { code: string; name: string };
 
 const VISIBILITY = [
@@ -91,13 +90,7 @@ const VISIBILITY = [
   { value: "private", label: "Private" },
 ] as const;
 
-export default function UploadForm({
-  categories,
-  licenses,
-}: {
-  categories: Category[];
-  licenses: License[];
-}) {
+export default function UploadForm({ licenses }: { licenses: License[] }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -108,7 +101,6 @@ export default function UploadForm({
   const [visibility, setVisibility] = useState<
     "public" | "unlisted" | "private"
   >("public");
-  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [lat, setLat] = useState<string>("");
   const [lng, setLng] = useState<string>("");
   const [locationName, setLocationName] = useState("");
@@ -199,7 +191,6 @@ export default function UploadForm({
           description: description || undefined,
           licenseCode,
           visibility,
-          categoryIds,
           galleryIds: [],
           location,
           thumbnail: {
@@ -311,31 +302,6 @@ export default function UploadForm({
           rows={3}
           maxLength={5000}
         />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium">Categories</label>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((c) => {
-            const active = categoryIds.includes(c.id);
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() =>
-                  setCategoryIds((prev) =>
-                    active ? prev.filter((id) => id !== c.id) : [...prev, c.id],
-                  )
-                }
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  active ? "bg-black text-white" : "bg-white"
-                }`}
-              >
-                {c.name}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       <div>
