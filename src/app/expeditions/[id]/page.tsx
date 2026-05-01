@@ -40,18 +40,18 @@ function thumbKey(storageKey: string, variants: Variant[]): string {
 export default async function ExpeditionDetailPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { slug } = await params;
+  const { id } = await params;
   const supabase = await createClient();
 
   const { data: expedition } = await supabase
     .from("expeditions")
     .select(
-      `id, slug, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
+      `id, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
        owner:profiles!expeditions_owner_id_fkey(id, username, display_name, avatar_url)`,
     )
-    .eq("slug", slug)
+    .eq("id", id)
     .maybeSingle();
 
   if (!expedition) notFound();
@@ -150,7 +150,7 @@ export default async function ExpeditionDetailPage({
       {user?.id === owner?.id && (
         <div className="mt-4 flex items-center justify-end gap-4">
           <Link
-            href={`/expeditions/${expedition.slug}/edit`}
+            href={`/expeditions/${expedition.id}/edit`}
             className="text-sm underline hover:text-gray-600"
           >
             Edit expedition
@@ -219,7 +219,7 @@ export default async function ExpeditionDetailPage({
                             {teaser.map((sp) => (
                               <Link
                                 key={sp.id}
-                                href={`/expeditions/${slug}/steps/${step.id}`}
+                                href={`/expeditions/${expedition.id}/steps/${step.id}`}
                                 className="block h-16 w-16 overflow-hidden rounded border bg-gray-100 transition hover:opacity-90"
                               >
                                 <img
@@ -233,7 +233,7 @@ export default async function ExpeditionDetailPage({
                             ))}
                           </div>
                           <Link
-                            href={`/expeditions/${slug}/steps/${step.id}`}
+                            href={`/expeditions/${expedition.id}/steps/${step.id}`}
                             className="text-sm text-gray-500 hover:underline"
                           >
                             {total > 5 ? `View all (${total})` : "View all"} →
@@ -241,7 +241,7 @@ export default async function ExpeditionDetailPage({
                         </div>
                       ) : (
                         <Link
-                          href={`/expeditions/${slug}/steps/${step.id}`}
+                          href={`/expeditions/${expedition.id}/steps/${step.id}`}
                           className="text-sm text-gray-500 hover:underline"
                         >
                           {user ? "Be the first to add a photo →" : "No photos yet →"}

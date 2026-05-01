@@ -91,11 +91,6 @@ const expeditionStepSchema = z.object({
 
 /** Request body for POST /api/expeditions */
 export const createExpeditionSchema = z.object({
-  slug: z
-    .string()
-    .min(1)
-    .max(200)
-    .regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens"),
   title: z.string().min(1).max(200),
   description: z.string().max(5000).optional(),
   coverStorageKey: z.string().optional(),

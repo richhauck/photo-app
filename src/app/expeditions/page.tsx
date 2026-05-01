@@ -23,7 +23,7 @@ export default async function ExpeditionsPage({
   let query = supabase
     .from("expeditions")
     .select(
-      `id, slug, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
+      `id, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
        owner:profiles!expeditions_owner_id_fkey(username, display_name, avatar_url)`,
       { count: "exact" },
     )
@@ -83,7 +83,7 @@ export default async function ExpeditionsPage({
         {expeditions?.map((exp) => (
           <Link
             key={exp.id}
-            href={`/expeditions/${exp.slug}`}
+            href={`/expeditions/${exp.id}`}
             className="group block overflow-hidden rounded-lg border bg-white transition-shadow hover:shadow-md"
           >
             <div className="relative aspect-video bg-gray-100">

@@ -70,13 +70,13 @@ export default async function PhotoPage({
     .select(
       `step:expedition_steps!expedition_step_photos_step_id_fkey(
          id, position,
-         expedition:expeditions!expedition_steps_expedition_id_fkey(slug, title)
+         expedition:expeditions!expedition_steps_expedition_id_fkey(id, title)
        )`,
     )
     .eq("photo_id", id);
 
   type ExpeditionLink = {
-    step: { id: string; position: number; expedition: { slug: string; title: string } };
+    step: { id: string; position: number; expedition: { id: string; title: string } };
   };
   const links = (expeditionLinks as unknown as ExpeditionLink[]) ?? [];
 
@@ -168,7 +168,7 @@ export default async function PhotoPage({
             {links.map(({ step }) => (
               <li key={step.id}>
                 <Link
-                  href={`/expeditions/${step.expedition.slug}/steps/${step.id}`}
+                  href={`/expeditions/${step.expedition.id}/steps/${step.id}`}
                   className="text-sm hover:underline"
                 >
                   {step.expedition.title}

@@ -35,7 +35,6 @@ export async function PATCH(
 
   const updates: Record<string, unknown> = {
     title: input.title,
-    slug: input.slug,
     description: input.description ?? null,
     updated_at: new Date().toISOString(),
   };
@@ -46,17 +45,13 @@ export async function PATCH(
     updates.badge_storage_key = input.badgeStorageKey;
   }
 
-  const { data: updated, error: updateErr } = await supabase
+  const { error: updateErr } = await supabase
     .from("expeditions")
     .update(updates)
-    .eq("id", id)
-    .select("slug")
-    .single();
+    .eq("id", id);
 
-  if (updateErr || !updated) {
-    const msg = updateErr?.message ?? "Update failed";
-    const status = msg.includes("unique") ? 409 : 500;
-    return NextResponse.json({ error: msg }, { status });
+  if (updateErr) {
+    return NextResponse.json({ error: updateErr.message }, { status: 500 });
   }
 
   // Replace steps: delete all existing, insert new set.
@@ -109,7 +104,7 @@ export async function PATCH(
     await deleteObject(existing.badge_storage_key).catch(() => null);
   }
 
-  return NextResponse.json({ slug: updated.slug });
+  return NextResponse.json({ id });
 }
 
 export async function DELETE(

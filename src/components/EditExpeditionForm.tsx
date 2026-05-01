@@ -14,16 +14,6 @@ export type InitialStep = {
 
 type Step = InitialStep & { showPicker: boolean };
 
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 200);
-}
-
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -66,7 +56,6 @@ function emptyStep(): Step {
 export default function EditExpeditionForm({
   expeditionId,
   initialTitle,
-  initialSlug,
   initialDescription,
   initialCoverStorageKey,
   initialBadgeStorageKey,
@@ -74,7 +63,6 @@ export default function EditExpeditionForm({
 }: {
   expeditionId: string;
   initialTitle: string;
-  initialSlug: string;
   initialDescription: string;
   initialCoverStorageKey: string | null;
   initialBadgeStorageKey: string | null;
@@ -82,7 +70,6 @@ export default function EditExpeditionForm({
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle);
-  const [slug, setSlug] = useState(initialSlug);
   const [description, setDescription] = useState(initialDescription);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -146,7 +133,6 @@ export default function EditExpeditionForm({
       ]);
 
       const payload = {
-        slug: slugify(slug) || slugify(title),
         title,
         description: description || undefined,
         coverStorageKey,
@@ -172,8 +158,7 @@ export default function EditExpeditionForm({
         throw new Error(data.error ?? "Failed to save expedition");
       }
 
-      const { slug: newSlug } = (await res.json()) as { slug: string };
-      router.push(`/expeditions/${newSlug}`);
+      router.push(`/expeditions/${expeditionId}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -197,19 +182,6 @@ export default function EditExpeditionForm({
           maxLength={200}
           required
         />
-      </div>
-
-      <div>
-        <label className="mb-1 block text-sm font-medium">Slug</label>
-        <input
-          className="w-full rounded border px-3 py-2 font-mono text-sm"
-          value={slug}
-          onChange={(e) => setSlug(slugify(e.target.value))}
-          maxLength={200}
-          pattern="[a-z0-9-]+"
-          required
-        />
-        <p className="mt-1 text-xs text-gray-500">URL: /expeditions/{slug || "…"}</p>
       </div>
 
       <div>

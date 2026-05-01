@@ -4,7 +4,9 @@
       "Bash(npx tsc *)",
       "Bash(xargs ls *)",
       "Bash(mkdir -p \"/Users/rhauck/Library/Application Support/Claude/local-agent-mode-sessions/b341b596-0714-48bb-92ed-ee2d0f85d841/d1f8b385-d28b-4427-b4ab-b9252c422926/local_f0090b64-16e2-4587-a504-9f14090b16a4/outputs/photo-app/src/app/api/expeditions/[id]\")",
-      "Bash(mkdir -p \"/Users/rhauck/Library/Application Support/Claude/local-agent-mode-sessions/b341b596-0714-48bb-92ed-ee2d0f85d841/d1f8b385-d28b-4427-b4ab-b9252c422926/local_f0090b64-16e2-4587-a504-9f14090b16a4/outputs/photo-app/src/app/expeditions/[slug]/edit\")"
+      "Bash(mkdir -p \"/Users/rhauck/Library/Application Support/Claude/local-agent-mode-sessions/b341b596-0714-48bb-92ed-ee2d0f85d841/d1f8b385-d28b-4427-b4ab-b9252c422926/local_f0090b64-16e2-4587-a504-9f14090b16a4/outputs/photo-app/src/app/expeditions/[slug]/edit\")",
+      "Bash(mkdir -p \"/Users/rhauck/Library/Application Support/Claude/local-agent-mode-sessions/b341b596-0714-48bb-92ed-ee2d0f85d841/d1f8b385-d28b-4427-b4ab-b9252c422926/local_f0090b64-16e2-4587-a504-9f14090b16a4/outputs/photo-app/src/app/expeditions/[id]/steps/[stepId]\")",
+      "Bash(mkdir -p \"/Users/rhauck/Library/Application Support/Claude/local-agent-mode-sessions/b341b596-0714-48bb-92ed-ee2d0f85d841/d1f8b385-d28b-4427-b4ab-b9252c422926/local_f0090b64-16e2-4587-a504-9f14090b16a4/outputs/photo-app/src/app/expeditions/[id]/edit\")"
     ]
   }
 }

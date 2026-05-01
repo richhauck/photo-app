@@ -25,15 +25,15 @@ function parseWkbPoint(hex: string | null | undefined): { lat: number; lng: numb
 export default async function StepDetailPage({
   params,
 }: {
-  params: Promise<{ slug: string; stepId: string }>;
+  params: Promise<{ id: string; stepId: string }>;
 }) {
-  const { slug, stepId } = await params;
+  const { id, stepId } = await params;
   const supabase = await createClient();
 
   const { data: expedition } = await supabase
     .from("expeditions")
-    .select("id, slug, title")
-    .eq("slug", slug)
+    .select("id, title")
+    .eq("id", id)
     .maybeSingle();
 
   if (!expedition) notFound();
@@ -56,7 +56,7 @@ export default async function StepDetailPage({
   return (
     <div className="mx-auto max-w-3xl py-8">
       <Link
-        href={`/expeditions/${slug}`}
+        href={`/expeditions/${expedition.id}`}
         className="text-sm text-gray-500 hover:underline"
       >
         ← {expedition.title}

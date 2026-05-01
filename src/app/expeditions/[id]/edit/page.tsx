@@ -23,9 +23,9 @@ function parseWkbPoint(hex: string | null | undefined): { lat: number; lng: numb
 export default async function EditExpeditionPage({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { slug } = await params;
+  const { id } = await params;
   const supabase = await createClient();
 
   const {
@@ -35,8 +35,8 @@ export default async function EditExpeditionPage({
 
   const { data: expedition } = await supabase
     .from("expeditions")
-    .select("id, owner_id, slug, title, description, cover_storage_key, badge_storage_key")
-    .eq("slug", slug)
+    .select("id, owner_id, title, description, cover_storage_key, badge_storage_key")
+    .eq("id", id)
     .maybeSingle();
 
   if (!expedition) notFound();
@@ -64,7 +64,6 @@ export default async function EditExpeditionPage({
       <EditExpeditionForm
         expeditionId={expedition.id}
         initialTitle={expedition.title}
-        initialSlug={expedition.slug}
         initialDescription={expedition.description ?? ""}
         initialCoverStorageKey={expedition.cover_storage_key ?? null}
         initialBadgeStorageKey={expedition.badge_storage_key ?? null}

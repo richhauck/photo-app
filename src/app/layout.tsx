@@ -63,6 +63,9 @@ export default async function RootLayout({
             <Link href="/about" className="underline">
               About
             </Link>
+            <Link href="/terms" className="underline">
+              Terms of Use
+            </Link>
           </footer>
         </main>
       </body>

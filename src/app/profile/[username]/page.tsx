@@ -38,7 +38,6 @@ export default async function PublicProfilePage({
   // Determine which expeditions this user has completed (contributed to every step).
   let completedExpeditions: Array<{
     id: string;
-    slug: string;
     title: string;
     badge_storage_key: string | null;
   }> = [];
@@ -60,7 +59,7 @@ export default async function PublicProfilePage({
 
     const { data: expeditionDetails } = await supabase
       .from("expeditions")
-      .select("id, slug, title, badge_storage_key, expedition_steps(id)")
+      .select("id, title, badge_storage_key, expedition_steps(id)")
       .in("id", expeditionIds);
 
     if (expeditionDetails) {
@@ -72,7 +71,6 @@ export default async function PublicProfilePage({
         })
         .map((exp) => ({
           id: exp.id,
-          slug: exp.slug,
           title: exp.title,
           badge_storage_key: exp.badge_storage_key,
         }));
@@ -118,7 +116,7 @@ export default async function PublicProfilePage({
           <h2 className="mb-4 text-lg font-semibold">Badges</h2>
           <div className="flex flex-wrap gap-4">
             {badgedExpeditions.map((e) => (
-              <Link key={e.id} href={`/expeditions/${e.slug}`} title={e.title}>
+              <Link key={e.id} href={`/expeditions/${e.id}`} title={e.title}>
                 <img
                   src={publicUrl(e.badge_storage_key!)}
                   alt={e.title}
@@ -140,7 +138,7 @@ export default async function PublicProfilePage({
                   ✓
                 </span>
                 <Link
-                  href={`/expeditions/${e.slug}`}
+                  href={`/expeditions/${e.id}`}
                   className="text-sm text-gray-800 hover:underline"
                 >
                   {e.title}

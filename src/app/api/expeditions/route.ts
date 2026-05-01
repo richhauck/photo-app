@@ -20,13 +20,12 @@ export async function POST(req: Request) {
     .from("expeditions")
     .insert({
       owner_id: user.id,
-      slug: input.slug,
       title: input.title,
       description: input.description ?? null,
       cover_storage_key: input.coverStorageKey ?? null,
       badge_storage_key: input.badgeStorageKey ?? null,
     })
-    .select("id, slug")
+    .select("id")
     .single();
 
   if (insertErr || !expedition) {
@@ -66,5 +65,5 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ slug: expedition.slug });
+  return NextResponse.json({ id: expedition.id });
 }
