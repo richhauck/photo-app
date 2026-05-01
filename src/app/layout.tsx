@@ -57,7 +57,14 @@ export default async function RootLayout({
             </div>
           </nav>
         </header>
-        <main className="px-4">{children}</main>
+        <main className="px-4">
+          {children}
+          <footer className="mx-auto mt-12 max-w-5xl border-t py-4 text-right text-sm text-gray-500">
+            <Link href="/about" className="underline">
+              About
+            </Link>
+          </footer>
+        </main>
       </body>
     </html>
   );
