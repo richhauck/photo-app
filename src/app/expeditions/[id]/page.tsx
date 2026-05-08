@@ -13,6 +13,7 @@ import PhotoMap, {
   type MapPin,
   type PhotoMapHandle,
 } from "@/components/PhotoMap";
+import { Pencil1Icon } from "@radix-ui/react-icons";
 
 function parseWkbPoint(
   hex: string | null | undefined,
@@ -218,9 +219,10 @@ export default function ExpeditionDetailPage({
         <div className="mt-4 flex items-center justify-end gap-4">
           <Link
             href={`/expeditions/${expedition.id}/edit`}
-            className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-blue-700 transition"
+            className="cursor-pointer px-3 py-1 bg-gray-400 text-white rounded hover:bg-blue-700 transition"
           >
-            Edit expedition
+            <Pencil1Icon className="mr-1 inline-block" />
+            Edit
           </Link>
           <DeleteExpeditionButton expeditionId={expedition.id} />
         </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrashIcon } from "@radix-ui/react-icons";
+import { Button } from "./ui/button";
 
 export default function DeleteExpeditionButton({
   expeditionId,
@@ -33,12 +34,13 @@ export default function DeleteExpeditionButton({
 
   if (!confirming) {
     return (
-      <button
+      <Button
+        variant="outline"
         onClick={() => setConfirming(true)}
         className="text-sm text-red-600 hover:underline"
       >
-        <TrashIcon /> Delete expedition
-      </button>
+        <TrashIcon /> Delete
+      </Button>
     );
   }
 
