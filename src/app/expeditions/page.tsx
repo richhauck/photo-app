@@ -80,65 +80,62 @@ export default async function ExpeditionsPage({
       )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-        {expeditions?.map((exp) => (
-          <Link
-            key={exp.id}
-            href={`/expeditions/${exp.id}`}
-            className="group block overflow-hidden rounded-lg border bg-white transition-shadow hover:shadow-md"
-          >
-            <div className="relative aspect-video bg-gray-100">
-              {exp.cover_storage_key ? (
-                <Image
-                  src={publicUrl(exp.cover_storage_key)}
-                  alt={exp.title}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover transition group-hover:scale-[1.02]"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-4xl text-gray-300">
-                  🗺️
-                </div>
-              )}
-              {exp.badge_storage_key && (
-                <img
-                  src={publicUrl(exp.badge_storage_key)}
-                  alt=""
-                  className="absolute bottom-2 left-2 h-10 w-10 rounded-md border-2 border-white object-cover shadow"
-                />
-              )}
-            </div>
-            <div className="p-4">
-              <p className="truncate font-semibold">{exp.title}</p>
-              {exp.description && (
-                <p className="mt-1 line-clamp-2 text-sm text-gray-600">
-                  {exp.description}
-                </p>
-              )}
-              {/* @ts-expect-error — Supabase typed joins need generated types */}
-              <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
-                {/* @ts-expect-error — Supabase typed joins need generated types */}
-                {exp.owner?.avatar_url ? (
-                  <img
-                    // @ts-expect-error — Supabase typed joins need generated types
-                    src={exp.owner.avatar_url}
-                    // @ts-expect-error — Supabase typed joins need generated types
-                    alt={exp.owner.username ?? ""}
-                    className="h-5 w-5 rounded-full object-cover"
+        {expeditions?.map((exp) => {
+          const owner = exp.owner as unknown as { username: string | null; avatar_url: string | null } | null;
+          return (
+            <Link
+              key={exp.id}
+              href={`/expeditions/${exp.id}`}
+              className="group block overflow-hidden rounded-lg border bg-white transition-shadow hover:shadow-md"
+            >
+              <div className="relative aspect-video bg-gray-100">
+                {exp.cover_storage_key ? (
+                  <Image
+                    src={publicUrl(exp.cover_storage_key)}
+                    alt={exp.title}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover transition group-hover:scale-[1.02]"
                   />
                 ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-medium text-gray-600">
-                    {/* @ts-expect-error — Supabase typed joins need generated types */}
-                    {(exp.owner?.username ?? "?")[0].toUpperCase()}
-                  </span>
+                  <div className="flex h-full items-center justify-center text-4xl text-gray-300">
+                    🗺️
+                  </div>
                 )}
-                {/* @ts-expect-error — Supabase typed joins need generated types */}
-                @{exp.owner?.username ?? "unknown"} · {exp.like_count} ♥ ·{" "}
-                {exp.comment_count} 💬
+                {exp.badge_storage_key && (
+                  <img
+                    src={publicUrl(exp.badge_storage_key)}
+                    alt=""
+                    className="absolute bottom-2 left-2 h-10 w-10 rounded-md border-2 border-white object-cover shadow"
+                  />
+                )}
               </div>
-            </div>
-          </Link>
-        ))}
+              <div className="p-4">
+                <p className="truncate font-semibold">{exp.title}</p>
+                {exp.description && (
+                  <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                    {exp.description}
+                  </p>
+                )}
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-500">
+                  {owner?.avatar_url ? (
+                    <img
+                      src={owner.avatar_url}
+                      alt={owner.username ?? ""}
+                      className="h-5 w-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-medium text-gray-600">
+                      {(owner?.username ?? "?")[0].toUpperCase()}
+                    </span>
+                  )}
+                  @{owner?.username ?? "unknown"} · {exp.like_count} ♥ ·{" "}
+                  {exp.comment_count} 💬
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <Pagination

@@ -2,6 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
+import { Noto_Sans, Playfair_Display } from "next/font/google";
+import { cn } from "@/lib/utils";
+import Breadcrumbs from "@/components/Breadcrumbs";
+
+const playfairDisplayHeading = Playfair_Display({subsets:['latin'],variable:'--font-heading'});
+
+const notoSans = Noto_Sans({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Photo App",
@@ -25,7 +32,7 @@ export default async function RootLayout({
     .maybeSingle();
 
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", notoSans.variable, playfairDisplayHeading.variable)}>
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
         <header className="border-b bg-white">
           <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
@@ -87,6 +94,7 @@ export default async function RootLayout({
             </div>
           </nav>
         </header>
+        <Breadcrumbs />
         <main className="px-4">
           {children}
           <footer className="mx-auto mt-12 max-w-5xl border-t py-4 text-right text-sm text-gray-500">

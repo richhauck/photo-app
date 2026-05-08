@@ -69,46 +69,43 @@ export default async function HomeFeed({
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {photos?.map((p) => (
-          <Link
-            key={p.id}
-            href={`/photos/${p.id}`}
-            className="group block overflow-hidden rounded-lg border"
-          >
-            <div className="relative aspect-square bg-gray-100">
-              <Image
-                src={publicUrl(p.storage_key)}
-                alt={p.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover transition group-hover:scale-[1.02]"
-              />
-            </div>
-            <div className="p-3">
-              <p className="truncate font-medium">{p.title}</p>
-              {/* @ts-expect-error — Supabase typed joins need generated types */}
-              <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
-                {/* @ts-expect-error — Supabase typed joins need generated types */}
-                {p.owner?.avatar_url ? (
-                  <img
-                    // @ts-expect-error — Supabase typed joins need generated types
-                    src={p.owner.avatar_url}
-                    // @ts-expect-error — Supabase typed joins need generated types
-                    alt={p.owner.username ?? ""}
-                    className="h-5 w-5 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-medium text-gray-600">
-                    {/* @ts-expect-error — Supabase typed joins need generated types */}
-                    {(p.owner?.username ?? "?")[0].toUpperCase()}
-                  </span>
-                )}
-                {/* @ts-expect-error — Supabase typed joins need generated types */}
-                @{p.owner?.username ?? "unknown"} · {p.like_count} ♥ · {p.comment_count} 💬
+        {photos?.map((p) => {
+          const owner = p.owner as unknown as { username: string | null; avatar_url: string | null } | null;
+          return (
+            <Link
+              key={p.id}
+              href={`/photos/${p.id}`}
+              className="group block overflow-hidden rounded-lg border"
+            >
+              <div className="relative aspect-square bg-gray-100">
+                <Image
+                  src={publicUrl(p.storage_key)}
+                  alt={p.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-cover transition group-hover:scale-[1.02]"
+                />
               </div>
-            </div>
-          </Link>
-        ))}
+              <div className="p-3">
+                <p className="truncate font-medium">{p.title}</p>
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
+                  {owner?.avatar_url ? (
+                    <img
+                      src={owner.avatar_url}
+                      alt={owner.username ?? ""}
+                      className="h-5 w-5 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gray-200 text-[10px] font-medium text-gray-600">
+                      {(owner?.username ?? "?")[0].toUpperCase()}
+                    </span>
+                  )}
+                  @{owner?.username ?? "unknown"} · {p.like_count} ♥ · {p.comment_count} 💬
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       <Pagination page={page} totalPages={totalPages} pathname="/" q={q} />
