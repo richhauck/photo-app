@@ -7,6 +7,7 @@ import { useRef, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { publicUrl } from "@/lib/r2";
 import LikeButton from "@/components/LikeButton";
+import FollowButton from "@/components/FollowButton";
 import ExpeditionComments from "@/components/ExpeditionComments";
 import DeleteExpeditionButton from "@/components/DeleteExpeditionButton";
 import PhotoMap, {
@@ -63,6 +64,7 @@ export default function ExpeditionDetailPage({
   const [steps, setSteps] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [myLike, setMyLike] = useState<any>(null);
+  const [myFollow, setMyFollow] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<PhotoMapHandle>(null);
 
@@ -109,19 +111,30 @@ export default function ExpeditionDetailPage({
           data: { user: currentUser },
         } = await supabase.auth.getUser();
 
-        const { data: likeData } = currentUser
-          ? await supabase
-              .from("expedition_likes")
-              .select("expedition_id")
-              .eq("expedition_id", expeditionData.id)
-              .eq("user_id", currentUser.id)
-              .maybeSingle()
-          : { data: null };
+        const [{ data: likeData }, { data: followData }] = await Promise.all([
+          currentUser
+            ? supabase
+                .from("expedition_likes")
+                .select("expedition_id")
+                .eq("expedition_id", expeditionData.id)
+                .eq("user_id", currentUser.id)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+          currentUser
+            ? supabase
+                .from("expedition_follows")
+                .select("expedition_id")
+                .eq("expedition_id", expeditionData.id)
+                .eq("user_id", currentUser.id)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]);
 
         setExpedition(expeditionData);
         setSteps(stepsData ?? []);
         setUser(currentUser);
         setMyLike(likeData);
+        setMyFollow(followData);
       } finally {
         setLoading(false);
       }
@@ -206,13 +219,21 @@ export default function ExpeditionDetailPage({
             </div>
           </div>
         </div>
-        <LikeButton
-          type="expedition"
-          id={expedition.id}
-          initialCount={expedition.like_count}
-          initiallyLiked={!!myLike}
-          canLike={!!user}
-        />
+        <div className="flex items-center gap-2">
+          <FollowButton
+            type="expedition"
+            id={expedition.id}
+            initiallyFollowing={!!myFollow}
+            canFollow={!!user}
+          />
+          <LikeButton
+            type="expedition"
+            id={expedition.id}
+            initialCount={expedition.like_count}
+            initiallyLiked={!!myLike}
+            canLike={!!user}
+          />
+        </div>
       </div>
 
       {user?.id === owner?.id && (

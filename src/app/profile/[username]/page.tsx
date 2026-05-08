@@ -6,6 +6,7 @@ import { publicUrl } from "@/lib/r2";
 import { Tabs } from "radix-ui";
 import { Box, Text } from "@radix-ui/themes";
 import { Pencil1Icon } from "@radix-ui/react-icons";
+import FollowButton from "@/components/FollowButton";
 
 export default async function PublicProfilePage({
   params,
@@ -28,20 +29,31 @@ export default async function PublicProfilePage({
   } = await supabase.auth.getUser();
   const isOwnProfile = currentUser?.id === profile.id;
 
-  const [{ data: photos }, { data: userContributions }] = await Promise.all([
-    supabase
-      .from("photos")
-      .select("id, title, storage_key, width, height")
-      .eq("owner_id", profile.id)
-      .eq("visibility", "public")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(48),
-    supabase
-      .from("expedition_step_photos")
-      .select("step_id, expedition_steps(expedition_id)")
-      .eq("contributor_id", profile.id),
-  ]);
+  const [{ data: photos }, { data: userContributions }, { data: followRow }] =
+    await Promise.all([
+      supabase
+        .from("photos")
+        .select("id, title, storage_key, width, height")
+        .eq("owner_id", profile.id)
+        .eq("visibility", "public")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(48),
+      supabase
+        .from("expedition_step_photos")
+        .select("step_id, expedition_steps(expedition_id)")
+        .eq("contributor_id", profile.id),
+      currentUser && !isOwnProfile
+        ? supabase
+            .from("user_follows")
+            .select("follower_id")
+            .eq("follower_id", currentUser.id)
+            .eq("following_id", profile.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+  const isFollowing = !!followRow;
 
   // Determine which expeditions this user has completed (contributed to every step).
   let completedExpeditions: Array<{
@@ -128,7 +140,7 @@ export default async function PublicProfilePage({
               )}
             </div>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <Link
               href="/profile"
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -136,6 +148,13 @@ export default async function PublicProfilePage({
               <Pencil1Icon className="mr-1 inline-block" />
               Edit Profile
             </Link>
+          ) : (
+            <FollowButton
+              type="user"
+              id={profile.id}
+              initiallyFollowing={isFollowing}
+              canFollow={!!currentUser}
+            />
           )}
         </div>
       </div>
