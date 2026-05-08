@@ -18,6 +18,12 @@ export default async function RootLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, display_name, username, avatar_url")
+    .eq("username", user?.user_metadata.username)
+    .maybeSingle();
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-gray-50 text-gray-900 antialiased">
@@ -32,24 +38,48 @@ export default async function RootLayout({
             <div className="flex items-center gap-4 text-sm">
               {user ? (
                 <>
-                  <Link href="/profile" className="underline">
-                    Profile
+                  <Link href="/profile" className="inline-block">
+                    <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-semibold text-gray-700">
+                      {profile ? (
+                        <img
+                          src={profile.avatar_url}
+                          alt={
+                            profile.display_name ?? profile.username ?? "Avatar"
+                          }
+                          className="h-full w-full object-cover rounded-full"
+                        />
+                      ) : (
+                        "?"
+                      )}
+                    </div>
                   </Link>
-                  <Link href="/upload" className="underline">
+                  <Link
+                    href="/upload"
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                  >
                     Upload
                   </Link>
                   <form action="/auth/logout" method="post">
-                    <button type="submit" className="underline">
+                    <button
+                      type="submit"
+                      className="px-3 py-1 bg-gray-300 text-gray-900 rounded hover:bg-gray-400 transition"
+                    >
                       Log out
                     </button>
                   </form>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="underline">
+                  <Link
+                    href="/login"
+                    className="px-3 py-1 bg-gray-300 text-gray-900 rounded hover:bg-gray-400 transition"
+                  >
                     Log in
                   </Link>
-                  <Link href="/signup" className="underline">
+                  <Link
+                    href="/signup"
+                    className="px-3 py-1 bg-gray-300 text-gray-900 rounded hover:bg-gray-400 transition"
+                  >
                     Sign up
                   </Link>
                 </>
