@@ -129,7 +129,8 @@ export default async function PhotoPage({
           </div>
         </div>
         <LikeButton
-          photoId={photo.id}
+          type="photo"
+          id={photo.id}
           initialCount={photo.like_count}
           initiallyLiked={!!myLike}
           canLike={!!user}

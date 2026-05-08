@@ -1,15 +1,23 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
+const CONFIG = {
+  photo: { table: "likes", idColumn: "photo_id" },
+  expedition: { table: "expedition_likes", idColumn: "expedition_id" },
+} as const;
+
 export default function LikeButton({
-  photoId,
+  type,
+  id,
   initialCount,
   initiallyLiked,
   canLike,
 }: {
-  photoId: string;
+  type: "photo" | "expedition";
+  id: string;
   initialCount: number;
   initiallyLiked: boolean;
   canLike: boolean;
@@ -29,19 +37,21 @@ export default function LikeButton({
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Optimistic
     setLiked((v) => !v);
     setCount((c) => c + (liked ? -1 : 1));
 
+    const { table, idColumn } = CONFIG[type];
     startTransition(async () => {
       if (liked) {
         await supabase
-          .from("likes")
+          .from(table)
           .delete()
-          .eq("photo_id", photoId)
+          .eq(idColumn, id)
           .eq("user_id", user.id);
       } else {
-        await supabase.from("likes").insert({ photo_id: photoId, user_id: user.id });
+        await supabase
+          .from(table)
+          .insert({ [idColumn]: id, user_id: user.id });
       }
     });
   }
@@ -55,7 +65,10 @@ export default function LikeButton({
         liked ? "bg-red-50 border-red-300 text-red-700" : "bg-white"
       }`}
     >
-      {liked ? "♥" : "♡"} {count}
+      <Heart
+        className={`inline-block w-4 h-4 mr-1 ${liked ? "fill-current" : ""}`}
+      />
+      {count}
     </button>
   );
 }

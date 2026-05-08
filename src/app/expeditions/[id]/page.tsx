@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { publicUrl } from "@/lib/r2";
-import ExpeditionLikeButton from "@/components/ExpeditionLikeButton";
+import LikeButton from "@/components/LikeButton";
 import ExpeditionComments from "@/components/ExpeditionComments";
 import DeleteExpeditionButton from "@/components/DeleteExpeditionButton";
 import PhotoMap from "@/components/PhotoMap";
@@ -139,8 +139,9 @@ export default async function ExpeditionDetailPage({
             </div>
           </div>
         </div>
-        <ExpeditionLikeButton
-          expeditionId={expedition.id}
+        <LikeButton
+          type="expedition"
+          id={expedition.id}
           initialCount={expedition.like_count}
           initiallyLiked={!!myLike}
           canLike={!!user}
