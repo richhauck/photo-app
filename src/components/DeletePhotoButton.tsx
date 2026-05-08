@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TrashIcon } from "@radix-ui/react-icons";
 
 export default function DeletePhotoButton({ photoId }: { photoId: string }) {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function DeletePhotoButton({ photoId }: { photoId: string }) {
         onClick={() => setConfirming(true)}
         className="text-sm text-red-600 hover:underline"
       >
+        <TrashIcon className="mr-1 inline-block" />
         Delete photo
       </button>
     );

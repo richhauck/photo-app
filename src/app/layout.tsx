@@ -118,19 +118,13 @@ export default async function RootLayout({
               <nav>
                 <ul className="flex items-center justify-end gap-4">
                   <li>
-                    <Link href="/about" className="underline">
-                      About
-                    </Link>
+                    <Link href="/about">About</Link>
                   </li>
                   <li>
-                    <Link href="/contact" className="underline">
-                      Contact
-                    </Link>
+                    <Link href="/contact">Contact</Link>
                   </li>
                   <li>
-                    <Link href="/privacy" className="underline">
-                      Privacy Policy
-                    </Link>
+                    <Link href="/privacy">Privacy Policy</Link>
                   </li>
                 </ul>
               </nav>
