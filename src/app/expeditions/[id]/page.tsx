@@ -1,14 +1,22 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { useRef, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { publicUrl } from "@/lib/r2";
 import LikeButton from "@/components/LikeButton";
 import ExpeditionComments from "@/components/ExpeditionComments";
 import DeleteExpeditionButton from "@/components/DeleteExpeditionButton";
-import PhotoMap from "@/components/PhotoMap";
+import PhotoMap, {
+  type MapPin,
+  type PhotoMapHandle,
+} from "@/components/PhotoMap";
 
-function parseWkbPoint(hex: string | null | undefined): { lat: number; lng: number } | null {
+function parseWkbPoint(
+  hex: string | null | undefined,
+): { lat: number; lng: number } | null {
   if (!hex) return null;
   try {
     const buf = Buffer.from(hex, "hex");
@@ -30,59 +38,114 @@ type Variant = { variant: string; storage_key: string };
 
 type TeaserPhoto = {
   id: string;
-  photo: { id: string; title: string; storage_key: string; photo_variants: Variant[] };
+  photo: {
+    id: string;
+    title: string;
+    storage_key: string;
+    photo_variants: Variant[];
+  };
 };
 
 function thumbKey(storageKey: string, variants: Variant[]): string {
-  return variants.find((v) => v.variant === "thumbnail")?.storage_key ?? storageKey;
+  return (
+    variants.find((v) => v.variant === "thumbnail")?.storage_key ?? storageKey
+  );
 }
 
-export default async function ExpeditionDetailPage({
+export default function ExpeditionDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const supabase = await createClient();
+  const [id, setId] = useState<string | null>(null);
+  const [expedition, setExpedition] = useState<any>(null);
+  const [steps, setSteps] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [myLike, setMyLike] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const mapRef = useRef<PhotoMapHandle>(null);
 
-  const { data: expedition } = await supabase
-    .from("expeditions")
-    .select(
-      `id, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
-       owner:profiles!expeditions_owner_id_fkey(id, username, display_name, avatar_url)`,
-    )
-    .eq("id", id)
-    .maybeSingle();
+  useEffect(() => {
+    params.then(({ id: expeditionId }) => setId(expeditionId));
+  }, [params]);
 
-  if (!expedition) notFound();
+  useEffect(() => {
+    if (!id) return;
 
-  const { data: steps } = await supabase
-    .from("expedition_steps")
-    .select(
-      `id, position, description, location_name, location,
-       expedition_step_photos(
-         id,
-         photo:photos!expedition_step_photos_photo_id_fkey(
-           id, title, storage_key,
-           photo_variants(variant, storage_key)
-         )
-       )`,
-    )
-    .eq("expedition_id", expedition.id)
-    .order("position", { ascending: true });
+    const fetchData = async () => {
+      try {
+        const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+        const { data: expeditionData } = await supabase
+          .from("expeditions")
+          .select(
+            `id, title, description, cover_storage_key, badge_storage_key, like_count, comment_count, created_at,
+             owner:profiles!expeditions_owner_id_fkey(id, username, display_name, avatar_url)`,
+          )
+          .eq("id", id)
+          .maybeSingle();
 
-  const { data: myLike } = user
-    ? await supabase
-        .from("expedition_likes")
-        .select("expedition_id")
-        .eq("expedition_id", expedition.id)
-        .eq("user_id", user.id)
-        .maybeSingle()
-    : { data: null };
+        if (!expeditionData) {
+          notFound();
+        }
+
+        const { data: stepsData } = await supabase
+          .from("expedition_steps")
+          .select(
+            `id, position, description, location_name, location,
+             expedition_step_photos(
+               id,
+               photo:photos!expedition_step_photos_photo_id_fkey(
+                 id, title, storage_key,
+                 photo_variants(variant, storage_key)
+               )
+             )`,
+          )
+          .eq("expedition_id", expeditionData.id)
+          .order("position", { ascending: true });
+
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
+
+        const { data: likeData } = currentUser
+          ? await supabase
+              .from("expedition_likes")
+              .select("expedition_id")
+              .eq("expedition_id", expeditionData.id)
+              .eq("user_id", currentUser.id)
+              .maybeSingle()
+          : { data: null };
+
+        setExpedition(expeditionData);
+        setSteps(stepsData ?? []);
+        setUser(currentUser);
+        setMyLike(likeData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+
+  if (loading || !expedition) {
+    return <div className="mx-auto max-w-3xl py-8">Loading...</div>;
+  }
+
+  const stepPins: MapPin[] = steps.flatMap((step, i) => {
+    const coords = parseWkbPoint(step.location as string | null);
+    return coords
+      ? [
+          {
+            lat: coords.lat,
+            lng: coords.lng,
+            label: step.location_name,
+            number: i + 1,
+          },
+        ]
+      : [];
+  });
 
   const owner = expedition.owner as unknown as {
     id: string;
@@ -112,7 +175,7 @@ export default async function ExpeditionDetailPage({
             <img
               src={publicUrl(expedition.badge_storage_key)}
               alt=""
-              className="h-16 w-16 shrink-0 rounded-xl border object-cover shadow-sm"
+              className="h-16 w-16 shrink-0 rounded-full border object-cover shadow-sm"
             />
           )}
           <div>
@@ -130,8 +193,11 @@ export default async function ExpeditionDetailPage({
                 </span>
               )}
               <span>
-                by{" "}
-                <Link href={`/profile/${owner?.username}`} className="hover:underline">
+                created by{" "}
+                <Link
+                  href={`/profile/${owner?.username}`}
+                  className="hover:underline"
+                >
                   @{owner?.username}
                 </Link>{" "}
                 · {new Date(expedition.created_at).toLocaleDateString()}
@@ -152,7 +218,7 @@ export default async function ExpeditionDetailPage({
         <div className="mt-4 flex items-center justify-end gap-4">
           <Link
             href={`/expeditions/${expedition.id}/edit`}
-            className="text-sm underline hover:text-gray-600"
+            className="px-3 py-1 bg-gray-400 text-white rounded hover:bg-blue-700 transition"
           >
             Edit expedition
           </Link>
@@ -161,7 +227,9 @@ export default async function ExpeditionDetailPage({
       )}
 
       {expedition.description && (
-        <p className="mt-4 whitespace-pre-wrap text-gray-800">{expedition.description}</p>
+        <p className="mt-4 whitespace-pre-wrap text-gray-800">
+          {expedition.description}
+        </p>
       )}
 
       <div className="mt-6">
@@ -185,31 +253,34 @@ export default async function ExpeditionDetailPage({
       {steps && steps.length > 0 && (
         <section id="steps" className="mt-10">
           <h2 className="mb-6 text-lg font-semibold">Steps</h2>
+          {stepPins.length > 0 && (
+            <div className="mb-8">
+              <PhotoMap ref={mapRef} pins={stepPins} />
+            </div>
+          )}
           <ol className="space-y-10">
             {steps.map((step, i) => {
-              const coords = parseWkbPoint(step.location as string | null);
-              const stepPhotos = (step.expedition_step_photos as unknown as TeaserPhoto[]) ?? [];
+              const stepPhotos =
+                (step.expedition_step_photos as unknown as TeaserPhoto[]) ?? [];
               const teaser = stepPhotos.slice(0, 5);
               const total = stepPhotos.length;
 
               return (
                 <li key={step.id} className="flex gap-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-sm font-semibold text-white">
+                  <button
+                    className="stepper flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-black text-sm font-semibold text-white hover:bg-gray-800 transition-colors cursor-pointer"
+                    onClick={() => mapRef.current?.zoomToPin(i)}
+                  >
                     {i + 1}
-                  </div>
+                  </button>
                   <div className="flex-1">
-                    <p className="whitespace-pre-wrap text-gray-800">{step.description}</p>
+                    <p className="whitespace-pre-wrap text-gray-800">
+                      {step.description}
+                    </p>
                     {step.location_name && (
-                      <p className="mt-1 text-sm text-gray-500">📍 {step.location_name}</p>
-                    )}
-                    {coords && (
-                      <div className="mt-3">
-                        <PhotoMap
-                          lat={coords.lat}
-                          lng={coords.lng}
-                          label={step.location_name}
-                        />
-                      </div>
+                      <p className="mt-1 text-sm text-gray-500">
+                        📍 {step.location_name}
+                      </p>
                     )}
 
                     {/* Photo teaser strip */}
@@ -225,7 +296,10 @@ export default async function ExpeditionDetailPage({
                               >
                                 <img
                                   src={publicUrl(
-                                    thumbKey(sp.photo.storage_key, sp.photo.photo_variants ?? []),
+                                    thumbKey(
+                                      sp.photo.storage_key,
+                                      sp.photo.photo_variants ?? [],
+                                    ),
                                   )}
                                   alt={sp.photo.title}
                                   className="h-full w-full object-cover"
@@ -245,7 +319,9 @@ export default async function ExpeditionDetailPage({
                           href={`/expeditions/${expedition.id}/steps/${step.id}`}
                           className="text-sm text-gray-500 hover:underline"
                         >
-                          {user ? "Be the first to add a photo →" : "No photos yet →"}
+                          {user
+                            ? "Be the first to add a photo →"
+                            : "No photos yet →"}
                         </Link>
                       )}
                     </div>
