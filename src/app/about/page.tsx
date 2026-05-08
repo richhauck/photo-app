@@ -1,7 +1,3 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-
 export default async function AboutPage() {
   return (
     <div className="mx-auto max-w-sm py-16">

@@ -53,13 +53,21 @@ export default async function RootLayout({
               <Link href="/" className="font-semibold">
                 📷 Photo App
               </Link>
+              <Link href="/my-feed" className="text-sm underline">
+                My Feed
+              </Link>
               <Link href="/expeditions" className="text-sm underline">
                 Expeditions
               </Link>
               <div className="flex items-center gap-4 text-sm">
                 {user ? (
                   <>
-                    <Link href="/profile" className="inline-block">
+                    <Link
+                      href={
+                        profile ? `/profile/${profile.username}` : "/profile"
+                      }
+                      className="inline-block"
+                    >
                       <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-semibold text-gray-700">
                         {profile ? (
                           <img
