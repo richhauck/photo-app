@@ -7,6 +7,7 @@ import LikeButton from "@/components/LikeButton";
 import CommentsSection from "@/components/CommentsSection";
 import PhotoMap from "@/components/PhotoMap";
 import DeletePhotoButton from "@/components/DeletePhotoButton";
+import EditPhotoButton from "@/components/EditPhotoButton";
 
 // PostgREST returns geography columns as hex-encoded EWKB.
 // Parse a Point to get lat/lng without an extra round-trip.
@@ -148,8 +149,17 @@ export default async function PhotoPage({
       </p>
 
       {user?.id === owner?.id && (
-        <div className="mt-4 flex justify-end">
-          <DeletePhotoButton photoId={photo.id} />
+        <div className="mt-4">
+          <div className="flex justify-end gap-4">
+            <EditPhotoButton
+              photoId={photo.id}
+              initialDescription={photo.description ?? null}
+              initialLat={coords?.lat ?? null}
+              initialLng={coords?.lng ?? null}
+              initialLocationName={photo.location_name ?? null}
+            />
+            <DeletePhotoButton photoId={photo.id} />
+          </div>
         </div>
       )}
       {coords && (
