@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { TrashIcon } from "@radix-ui/react-icons";
 
 type Comment = {
   id: string;
@@ -54,7 +55,10 @@ export default function CommentsSection({
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) { setBusy(false); return; }
+    if (!user) {
+      setBusy(false);
+      return;
+    }
 
     const { error } = await supabase
       .from("comments")
@@ -99,7 +103,10 @@ export default function CommentsSection({
             <div className="flex items-start justify-between gap-2">
               <p className="text-sm text-gray-600">
                 {c.author?.username ? (
-                  <Link href={`/profile/${c.author.username}`} className="hover:underline">
+                  <Link
+                    href={`/profile/${c.author.username}`}
+                    className="hover:underline"
+                  >
                     @{c.author.username}
                   </Link>
                 ) : (
@@ -107,8 +114,8 @@ export default function CommentsSection({
                 )}{" "}
                 · {new Date(c.created_at).toLocaleString()}
               </p>
-              {currentUserId === c.author_id && (
-                confirming === c.id ? (
+              {currentUserId === c.author_id &&
+                (confirming === c.id ? (
                   <div className="flex shrink-0 items-center gap-2">
                     <button
                       onClick={() => setConfirming(null)}
@@ -128,15 +135,16 @@ export default function CommentsSection({
                     onClick={() => setConfirming(c.id)}
                     className="shrink-0 text-xs text-gray-400 hover:text-red-600"
                   >
-                    Delete
+                    <TrashIcon /> Delete
                   </button>
-                )
-              )}
+                ))}
             </div>
             <p className="mt-1 whitespace-pre-wrap">{c.body}</p>
           </li>
         ))}
-        {comments.length === 0 && <p className="text-sm text-gray-500">No comments yet.</p>}
+        {comments.length === 0 && (
+          <p className="text-sm text-gray-500">No comments yet.</p>
+        )}
       </ul>
     </div>
   );

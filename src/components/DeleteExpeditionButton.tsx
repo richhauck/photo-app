@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TrashIcon } from "@radix-ui/react-icons";
 
-export default function DeleteExpeditionButton({ expeditionId }: { expeditionId: string }) {
+export default function DeleteExpeditionButton({
+  expeditionId,
+}: {
+  expeditionId: string;
+}) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -12,7 +17,9 @@ export default function DeleteExpeditionButton({ expeditionId }: { expeditionId:
   async function handleDelete() {
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/expeditions/${expeditionId}`, { method: "DELETE" });
+    const res = await fetch(`/api/expeditions/${expeditionId}`, {
+      method: "DELETE",
+    });
     if (res.ok) {
       router.push("/expeditions");
       router.refresh();
@@ -26,15 +33,20 @@ export default function DeleteExpeditionButton({ expeditionId }: { expeditionId:
 
   if (!confirming) {
     return (
-      <button onClick={() => setConfirming(true)} className="text-sm text-red-600 hover:underline">
-        Delete expedition
+      <button
+        onClick={() => setConfirming(true)}
+        className="text-sm text-red-600 hover:underline"
+      >
+        <TrashIcon /> Delete expedition
       </button>
     );
   }
 
   return (
     <div className="flex flex-col items-end gap-2">
-      <p className="text-sm text-gray-700">Delete this expedition permanently?</p>
+      <p className="text-sm text-gray-700">
+        Delete this expedition permanently?
+      </p>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button

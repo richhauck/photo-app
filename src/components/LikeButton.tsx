@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { HeartIcon, HeartFilledIcon } from "@radix-ui/react-icons";
 
 const CONFIG = {
   photo: { table: "likes", idColumn: "photo_id" },
@@ -49,9 +50,7 @@ export default function LikeButton({
           .eq(idColumn, id)
           .eq("user_id", user.id);
       } else {
-        await supabase
-          .from(table)
-          .insert({ [idColumn]: id, user_id: user.id });
+        await supabase.from(table).insert({ [idColumn]: id, user_id: user.id });
       }
     });
   }
@@ -65,9 +64,11 @@ export default function LikeButton({
         liked ? "bg-red-50 border-red-300 text-red-700" : "bg-white"
       }`}
     >
-      <Heart
-        className={`inline-block w-4 h-4 mr-1 ${liked ? "fill-current" : ""}`}
-      />
+      {liked ? (
+        <HeartFilledIcon className="inline-block w-4 h-4 mr-1" />
+      ) : (
+        <HeartIcon className="inline-block w-4 h-4 mr-1" />
+      )}
       {count}
     </button>
   );

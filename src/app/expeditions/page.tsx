@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { publicUrl } from "@/lib/r2";
 import SearchInput from "@/components/SearchInput";
 import Pagination from "@/components/Pagination";
+import { HeartIcon, ChatBubbleIcon } from "@radix-ui/react-icons";
 
 const PAGE_SIZE = 24;
 
@@ -81,7 +82,10 @@ export default async function ExpeditionsPage({
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
         {expeditions?.map((exp) => {
-          const owner = exp.owner as unknown as { username: string | null; avatar_url: string | null } | null;
+          const owner = exp.owner as unknown as {
+            username: string | null;
+            avatar_url: string | null;
+          } | null;
           return (
             <Link
               key={exp.id}
@@ -106,7 +110,7 @@ export default async function ExpeditionsPage({
                   <img
                     src={publicUrl(exp.badge_storage_key)}
                     alt=""
-                    className="absolute bottom-2 left-2 h-10 w-10 rounded-md border-2 border-white object-cover shadow"
+                    className="absolute top-2 right-2 h-10 w-10 rounded-full border-2 border-white object-cover shadow"
                   />
                 )}
               </div>
@@ -129,8 +133,8 @@ export default async function ExpeditionsPage({
                       {(owner?.username ?? "?")[0].toUpperCase()}
                     </span>
                   )}
-                  @{owner?.username ?? "unknown"} · {exp.like_count} ♥ ·{" "}
-                  {exp.comment_count} 💬
+                  @{owner?.username ?? "unknown"} · {exp.like_count}{" "}
+                  <HeartIcon /> · {exp.comment_count} <ChatBubbleIcon />
                 </div>
               </div>
             </Link>

@@ -2,8 +2,14 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { TextField } from "@radix-ui/themes";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 
-export default function SearchInput({ placeholder = "Search…" }: { placeholder?: string }) {
+export default function SearchInput({
+  placeholder = "Search…",
+}: {
+  placeholder?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -15,7 +21,12 @@ export default function SearchInput({ placeholder = "Search…" }: { placeholder
     setValue(searchParams.get("q") ?? "");
   }, [searchParams]);
 
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
@@ -34,12 +45,16 @@ export default function SearchInput({ placeholder = "Search…" }: { placeholder
   }
 
   return (
-    <input
+    <TextField.Root
       type="search"
       value={value}
       onChange={handleChange}
       placeholder={placeholder}
-      className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200 sm:w-72"
-    />
+      className="sm:w-72"
+    >
+      <TextField.Slot>
+        <MagnifyingGlassIcon height="16" width="16" />
+      </TextField.Slot>
+    </TextField.Root>
   );
 }

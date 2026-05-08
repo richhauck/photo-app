@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { publicUrl } from "@/lib/r2";
 import SearchInput from "@/components/SearchInput";
 import Pagination from "@/components/Pagination";
+import { HeartIcon, ChatBubbleIcon } from "@radix-ui/react-icons";
 
 const PAGE_SIZE = 24;
 
@@ -34,14 +35,18 @@ export default async function HomeFeed({
     .range(from, to);
 
   if (q.trim()) {
-    query = query.or(`title.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`);
+    query = query.or(
+      `title.ilike.%${q.trim()}%,description.ilike.%${q.trim()}%`,
+    );
   }
 
   const { data: photos, count, error } = await query;
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   if (error) {
-    return <p className="p-8 text-red-600">Failed to load feed: {error.message}</p>;
+    return (
+      <p className="p-8 text-red-600">Failed to load feed: {error.message}</p>
+    );
   }
 
   return (
@@ -70,7 +75,10 @@ export default async function HomeFeed({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {photos?.map((p) => {
-          const owner = p.owner as unknown as { username: string | null; avatar_url: string | null } | null;
+          const owner = p.owner as unknown as {
+            username: string | null;
+            avatar_url: string | null;
+          } | null;
           return (
             <Link
               key={p.id}
@@ -100,7 +108,8 @@ export default async function HomeFeed({
                       {(owner?.username ?? "?")[0].toUpperCase()}
                     </span>
                   )}
-                  @{owner?.username ?? "unknown"} · {p.like_count} ♥ · {p.comment_count} 💬
+                  @{owner?.username ?? "unknown"} · {p.like_count} <HeartIcon />{" "}
+                  · {p.comment_count} <ChatBubbleIcon />
                 </div>
               </div>
             </Link>
