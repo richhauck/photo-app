@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@photo-app/shared": [
+        "../../packages/shared/src/index.ts"
       ]
     }
   },
